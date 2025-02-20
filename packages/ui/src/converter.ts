@@ -30,21 +30,14 @@ export function convertToReactFlow(graph: DependencyGraph): {
 
   // ノードの初期化
   Array.from(graph.nodes.keys()).forEach((id) => {
+    const node = graph.nodes.get(id);
+    if (!node) return;
+
     nodesWithDeps.set(id, {
       id,
-      dependencies: new Set(),
-      dependents: new Set(),
+      dependencies: new Set(node.dependencies.imports),
+      dependents: new Set(node.dependencies.importedBy),
     });
-  });
-
-  // 依存関係の構築
-  Array.from(graph.edges).forEach((edge) => {
-    const source = nodesWithDeps.get(edge.from);
-    const target = nodesWithDeps.get(edge.to);
-    if (source && target) {
-      source.dependencies.add(edge.to);
-      target.dependents.add(edge.from);
-    }
   });
 
   // 2. ランク付け（Longest Path Layering）
@@ -125,7 +118,7 @@ export function convertToReactFlow(graph: DependencyGraph): {
 
   // 5. ReactFlowのノードとエッジの生成
   const nodes: FlowNode[] = Array.from(graph.nodes.values()).map((node: DependencyNode) => ({
-    id: node.id,
+    id: node.relativePath,
     type: node.type === 'vue' ? 'vueComponent' : node.type,
     position: positions.get(node.id) || { x: 0, y: 0 },
     data: {
@@ -136,14 +129,22 @@ export function convertToReactFlow(graph: DependencyGraph): {
     },
   }));
 
-  const edges: FlowEdge[] = Array.from(graph.edges).map((edge: DependencyEdge) => ({
-    id: `${edge.from}-${edge.to}`,
-    source: edge.from,
-    target: edge.to,
-    type: 'smoothstep',
-    animated: true,
-    style: { stroke: '#888' },
-  }));
+  const edges: FlowEdge[] = Array.from(graph.edges)
+    .map((edge: DependencyEdge) => {
+      const fromNode = graph.nodes.get(edge.from);
+      const toNode = graph.nodes.get(edge.to);
+      if (!fromNode || !toNode) return null;
+
+      return {
+        id: `${fromNode.relativePath}-${toNode.relativePath}`,
+        source: fromNode.relativePath,
+        target: toNode.relativePath,
+        type: 'smoothstep',
+        animated: true,
+        style: { stroke: '#888' },
+      };
+    })
+    .filter((edge): edge is NonNullable<typeof edge> => edge !== null);
 
   return { nodes, edges };
 }

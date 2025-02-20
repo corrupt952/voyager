@@ -50,7 +50,10 @@ export class DependencyAnalyzer {
       type: parseResult.type,
       scriptType: parseResult.scriptType,
       scriptLang: parseResult.scriptLang,
-      imports: parseResult.imports.map((imp) => imp.source),
+      dependencies: {
+        imports: parseResult.imports.map((imp) => imp.source),
+        importedBy: [], // 初期値は空配列、後で構築
+      },
       exports: parseResult.exports,
     };
   }
@@ -72,17 +75,24 @@ export class DependencyAnalyzer {
       }
     }
 
-    // 2. インポート関係からエッジを作成
+    // 2. インポート関係からエッジを作成し、双方向の依存関係を構築
     for (const [filePath, node] of graph.nodes) {
-      for (const importPath of node.imports) {
+      for (const importPath of node.dependencies.imports) {
         const resolveResult = this.pathResolver.resolve(importPath, filePath);
         if (resolveResult.resolvedPath) {
+          // エッジを追加
           const edge: DependencyEdge = {
             from: filePath,
             to: resolveResult.resolvedPath,
             type: 'import',
           };
           graph.edges.add(edge);
+
+          // 依存されている側のノードのimportedByに追加
+          const targetNode = graph.nodes.get(resolveResult.resolvedPath);
+          if (targetNode) {
+            targetNode.dependencies.importedBy.push(filePath);
+          }
         }
       }
     }

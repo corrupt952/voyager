@@ -298,7 +298,6 @@ function DependencyGraphViewerInner({ graph, focusNodeId }: DependencyGraphViewe
 
     const enhancedNodes = initialNodes.map((node) => {
       const nodeInfo = Array.from(graph.nodes.values()).find((n) => n.relativePath === node.id);
-      const dependencies = Array.from(graph.edges).filter((edge) => edge.from === nodeInfo?.id);
 
       return {
         ...node,
@@ -306,7 +305,8 @@ function DependencyGraphViewerInner({ graph, focusNodeId }: DependencyGraphViewe
           ...node.data,
           info: {
             type: nodeInfo?.type || 'unknown',
-            dependencies: dependencies.length,
+            dependencies: nodeInfo?.dependencies.imports.length || 0,
+            dependents: nodeInfo?.dependencies.importedBy.length || 0,
             scriptType: nodeInfo?.scriptType,
             scriptLang: nodeInfo?.scriptLang,
           },
@@ -408,6 +408,10 @@ function DependencyGraphViewerInner({ graph, focusNodeId }: DependencyGraphViewe
           <div>
             <strong>依存数:</strong>{' '}
             {nodes.find((n) => n.id === hoveredNode)?.data?.info?.dependencies || 0}
+          </div>
+          <div>
+            <strong>被依存数:</strong>{' '}
+            {nodes.find((n) => n.id === hoveredNode)?.data?.info?.dependents || 0}
           </div>
         </div>
       )}

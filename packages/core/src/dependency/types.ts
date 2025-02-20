@@ -14,8 +14,13 @@ export interface DependencyNode {
   scriptType?: ScriptType;
   /** スクリプト言語 */
   scriptLang: ScriptLang;
-  /** 依存しているファイルのパス */
-  imports: string[];
+  /** 依存関係情報 */
+  dependencies: {
+    /** このファイルが依存しているファイルのパス（このファイルが使っているファイル） */
+    imports: string[];
+    /** このファイルに依存しているファイルのパス（このファイルを使っているファイル） */
+    importedBy: string[];
+  };
   /** エクスポート情報 */
   exports: ExportInfo;
 }

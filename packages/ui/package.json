@@ -1,0 +1,45 @@
+{
+  "name": "@voyager/ui",
+  "version": "0.0.1",
+  "description": "Vue component dependency visualizer UI",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./template": "./dist/template.html"
+  },
+  "scripts": {
+    "build": "vite build && vite build --config vite.visualizer.config.ts",
+    "dev": "vite",
+    "test": "vitest",
+    "lint": "eslint src/**/*.{ts,tsx}",
+    "format": "prettier --write src/**/*.{ts,tsx}"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "dependencies": {
+    "@voyager/core": "workspace:*",
+    "@xyflow/react": "^12.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "@typescript-eslint/eslint-plugin": "^8.24.1",
+    "@typescript-eslint/parser": "^8.24.1",
+    "@vitejs/plugin-react": "^4.2.1",
+    "eslint": "^9.20.1",
+    "eslint-config-prettier": "^10.0.1",
+    "prettier": "^3.5.1",
+    "typescript": "^5.7.3",
+    "vite": "^5.0.12",
+    "vite-plugin-dts": "^3.7.3",
+    "vitest": "^3.0.6"
+  }
+}

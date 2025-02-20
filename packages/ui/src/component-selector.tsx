@@ -1,0 +1,150 @@
+import React, { useState } from 'react';
+import { DependencyNode } from '@voyager/core';
+
+interface ComponentSelectorProps {
+  nodes: Map<string, DependencyNode>;
+  onSelect: (nodeId: string) => void;
+  selectedNodeId: string | null;
+}
+
+// カテゴリの定義
+const CATEGORIES = {
+  vue: 'Components',
+  script: 'Scripts',
+  definition: 'Type Definitions',
+} as const;
+
+export function ComponentSelector({ nodes, onSelect, selectedNodeId }: ComponentSelectorProps) {
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // ノードをカテゴリ別に分類
+  const categorizedNodes = Array.from(nodes.values()).reduce((acc, node) => {
+    if (!acc.has(node.type)) {
+      acc.set(node.type, []);
+    }
+    acc.get(node.type)?.push(node);
+    return acc;
+  }, new Map<string, DependencyNode[]>());
+
+  // 各カテゴリ内でノードを名前でソート
+  categorizedNodes.forEach((nodes) => {
+    nodes.sort((a, b) => a.id.localeCompare(b.id));
+  });
+
+  // 検索フィルター
+  const filterNode = (node: DependencyNode) =>
+    node.id.toLowerCase().includes(searchQuery.toLowerCase());
+
+  return (
+    <div className="component-selector">
+      <div className="search-bar">
+        <input
+          type="text"
+          placeholder="検索..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+      </div>
+
+      <div className="category-list">
+        {Array.from(categorizedNodes.entries()).map(([type, nodes]) => {
+          const filteredNodes = nodes.filter(filterNode);
+          if (filteredNodes.length === 0) return null;
+
+          return (
+            <div key={type} className="category">
+              <div className="category-header">
+                {CATEGORIES[type as keyof typeof CATEGORIES] || type}
+                <span className="count">{filteredNodes.length}</span>
+              </div>
+              <div className="node-list">
+                {filteredNodes.map((node) => (
+                  <div
+                    key={node.id}
+                    className={`node ${selectedNodeId === node.id ? 'selected' : ''}`}
+                    onClick={() => onSelect(node.id)}
+                  >
+                    {node.id.split('/').pop()}
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <style>{`
+        .component-selector {
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+          background: #f8f9fa;
+        }
+
+        .search-bar {
+          padding: 8px;
+          border-bottom: 1px solid #e9ecef;
+          background: white;
+        }
+
+        .search-bar input {
+          width: 100%;
+          padding: 6px 8px;
+          border: 1px solid #ced4da;
+          border-radius: 4px;
+          font-size: 13px;
+        }
+
+        .category-list {
+          flex: 1;
+          overflow: auto;
+          padding: 8px 0;
+        }
+
+        .category {
+          margin-bottom: 16px;
+        }
+
+        .category-header {
+          padding: 4px 12px;
+          font-size: 12px;
+          font-weight: 500;
+          color: #495057;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        .count {
+          background: #e9ecef;
+          padding: 2px 6px;
+          border-radius: 10px;
+          font-size: 11px;
+          color: #666;
+        }
+
+        .node-list {
+          padding: 4px 0;
+        }
+
+        .node {
+          padding: 6px 12px;
+          font-size: 13px;
+          cursor: pointer;
+          color: #495057;
+        }
+
+        .node:hover {
+          background: #e9ecef;
+        }
+
+        .node.selected {
+          background: #dee2e6;
+          color: #000;
+        }
+      `}</style>
+    </div>
+  );
+}

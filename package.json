@@ -1,0 +1,40 @@
+{
+  "name": "voyager",
+  "private": true,
+  "packageManager": "pnpm@9.1.0",
+  "version": "0.0.1",
+  "description": "Vue component dependency visualization tool",
+  "main": "dist/index.js",
+  "bin": {
+    "voyager": "./dist/cli.js"
+  },
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm --filter @voyager/cli dev",
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "lint": "pnpm -r lint",
+    "format": "pnpm -r format",
+    "build:visualizer": "tsx src/visualizer/build.ts",
+    "voyager": "tsx packages/cli/src/index.ts"
+  },
+  "keywords": [
+    "vue",
+    "visualization",
+    "dependency-graph",
+    "cli"
+  ],
+  "author": "K@zuki. <k@zuki.dev>",
+  "license": "MIT",
+  "pnpm": {
+    "peerDependencyRules": {
+      "allowedVersions": {
+        "react": "19",
+        "react-dom": "19"
+      }
+    }
+  },
+  "devDependencies": {
+    "tsx": "^4.19.3"
+  }
+}

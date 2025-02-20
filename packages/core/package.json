@@ -1,0 +1,29 @@
+{
+  "name": "@voyager/core",
+  "version": "0.0.1",
+  "description": "Vue component dependency analyzer",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "vitest",
+    "lint": "eslint src/**/*.ts",
+    "format": "prettier --write src/**/*.ts"
+  },
+  "dependencies": {
+    "@vue/compiler-sfc": "^3.5.13",
+    "fast-glob": "^3.3.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.4",
+    "@typescript-eslint/eslint-plugin": "^8.24.1",
+    "@typescript-eslint/parser": "^8.24.1",
+    "eslint": "^9.20.1",
+    "eslint-config-prettier": "^10.0.1",
+    "prettier": "^3.5.1",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.6"
+  }
+}

@@ -1,5 +1,5 @@
 import { resolve, dirname, join, isAbsolute } from 'path';
-import { existsSync, readFileSync } from 'fs';
+import { existsSync, readFileSync, statSync } from 'fs';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -164,10 +164,39 @@ export class PathResolver {
   private resolveWithExtension(basePath: string): ResolveResult {
     // 1. 完全なパスでの確認
     if (existsSync(basePath)) {
-      return { resolvedPath: basePath };
+      if (statSync(basePath).isDirectory()) {
+        // ディレクトリの場合はindex.*を検索
+        for (const ext of this.extensions) {
+          const indexPath = join(basePath, 'index' + ext);
+          if (existsSync(indexPath)) {
+            return { resolvedPath: indexPath };
+          }
+        }
+      } else {
+        return { resolvedPath: basePath };
+      }
     }
 
-    // 2. package.jsonの確認
+    // 2. 拡張子を付けて確認
+    for (const ext of this.extensions) {
+      const pathWithExt = basePath + ext;
+      if (existsSync(pathWithExt)) {
+        return { resolvedPath: pathWithExt };
+      }
+    }
+
+    // 3. ディレクトリとして確認し、index.*を検索
+    const dirPath = basePath;
+    if (existsSync(dirPath) && statSync(dirPath).isDirectory()) {
+      for (const ext of this.extensions) {
+        const indexPath = join(dirPath, 'index' + ext);
+        if (existsSync(indexPath)) {
+          return { resolvedPath: indexPath };
+        }
+      }
+    }
+
+    // 4. package.jsonの確認（node_modulesの場合）
     if (basePath.includes('node_modules')) {
       const pkgPath = join(basePath, 'package.json');
       if (existsSync(pkgPath)) {
@@ -182,14 +211,6 @@ export class PathResolver {
         } catch {
           // package.jsonの読み込みエラーは無視
         }
-      }
-    }
-
-    // 3. 拡張子の解決
-    for (const ext of this.extensions) {
-      const pathWithExt = basePath + ext;
-      if (existsSync(pathWithExt)) {
-        return { resolvedPath: pathWithExt };
       }
     }
 

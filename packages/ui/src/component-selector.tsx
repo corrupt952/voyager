@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { DependencyNode } from '@voyager/core';
+import { getNodeLabel } from './utils';
 
 interface ComponentSelectorProps {
   nodes: Map<string, DependencyNode>;
@@ -64,7 +65,7 @@ export function ComponentSelector({ nodes, onSelect, selectedNodeId }: Component
                     className={`node ${selectedNodeId === node.id ? 'selected' : ''}`}
                     onClick={() => onSelect(node.id)}
                   >
-                    {node.id.split('/').pop()}
+                    {getNodeLabel(node.id)}
                   </div>
                 ))}
               </div>

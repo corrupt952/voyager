@@ -10,6 +10,7 @@ import {
   ReactFlowProvider,
 } from '@xyflow/react';
 import { DependencyGraph } from '@voyager/core';
+import { getNodeLabel } from './utils';
 import '@xyflow/react/dist/style.css';
 
 // デフォルトのスタイル
@@ -240,7 +241,7 @@ function extractDependencySubgraph(graph: DependencyGraph, focusNodeId: string) 
       return {
         id: nodeData.relativePath,
         data: {
-          label: nodeId.split('/').pop() || nodeId,
+          label: getNodeLabel(nodeData.relativePath),
         },
         position: { x: 0, y: 0 },
         style: getNodeStyle(nodeData.type, nodeId === focusNodeId),

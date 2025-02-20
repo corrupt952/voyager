@@ -271,6 +271,7 @@ function extractDependencySubgraph(graph: DependencyGraph, focusNodeId: string) 
 function DependencyGraphViewerInner({ graph, focusNodeId }: DependencyGraphViewerProps) {
   const [nodes, setNodes] = React.useState<any[]>([]);
   const [edges, setEdges] = React.useState<any[]>([]);
+  const [hoveredNode, setHoveredNode] = React.useState<string | null>(null);
   const { fitView } = useReactFlow();
 
   const onNodesChange = React.useCallback(
@@ -278,8 +279,15 @@ function DependencyGraphViewerInner({ graph, focusNodeId }: DependencyGraphViewe
     [setNodes]
   );
 
+  const onNodeMouseEnter = React.useCallback((event: React.MouseEvent, node: any) => {
+    setHoveredNode(node.id);
+  }, []);
+
+  const onNodeMouseLeave = React.useCallback(() => {
+    setHoveredNode(null);
+  }, []);
+
   React.useEffect(() => {
-    // focusNodeIdに対応するノードを探す
     const focusNode = Array.from(graph.nodes.values()).find((n) => n.id === focusNodeId);
     if (!focusNode) return;
 
@@ -288,10 +296,28 @@ function DependencyGraphViewerInner({ graph, focusNodeId }: DependencyGraphViewe
       focusNodeId
     );
 
+    const enhancedNodes = initialNodes.map((node) => {
+      const nodeInfo = Array.from(graph.nodes.values()).find((n) => n.relativePath === node.id);
+      const dependencies = Array.from(graph.edges).filter((edge) => edge.from === nodeInfo?.id);
+
+      return {
+        ...node,
+        data: {
+          ...node.data,
+          info: {
+            type: nodeInfo?.type || 'unknown',
+            dependencies: dependencies.length,
+            scriptType: nodeInfo?.scriptType,
+            scriptLang: nodeInfo?.scriptLang,
+          },
+        },
+      };
+    });
+
     const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(
-      initialNodes,
+      enhancedNodes,
       initialEdges,
-      focusNode.relativePath // レイアウト時は相対パスを使用
+      focusNode.relativePath
     );
 
     setNodes(layoutedNodes);
@@ -308,41 +334,84 @@ function DependencyGraphViewerInner({ graph, focusNodeId }: DependencyGraphViewe
   }, [graph, focusNodeId, fitView]);
 
   return (
-    <ReactFlow
-      nodes={nodes}
-      edges={edges}
-      onNodesChange={onNodesChange}
-      minZoom={0.1}
-      maxZoom={1.5}
-      defaultEdgeOptions={{
-        type: 'smoothstep',
-        style: {
-          stroke: '#888',
-          strokeWidth: 2,
-          opacity: 0.6,
-        },
-        animated: true,
-      }}
-      fitViewOptions={{
-        padding: 0.5,
-        minZoom: 0.5,
-        maxZoom: 1,
-        duration: 800,
-      }}
-      nodesDraggable={true}
-      nodesConnectable={false}
-      elementsSelectable={true}
-      zoomOnScroll={true}
-      panOnScroll={false}
-      panOnDrag={true}
-      snapToGrid={true}
-      snapGrid={[10, 10]}
-      key={focusNodeId}
-    >
-      <Background />
-      <Controls />
-      <MiniMap nodeStrokeWidth={3} zoomable pannable />
-    </ReactFlow>
+    <>
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        onNodesChange={onNodesChange}
+        onNodeMouseEnter={onNodeMouseEnter}
+        onNodeMouseLeave={onNodeMouseLeave}
+        minZoom={0.1}
+        maxZoom={1.5}
+        defaultEdgeOptions={{
+          type: 'smoothstep',
+          style: {
+            stroke: '#888',
+            strokeWidth: 2,
+            opacity: 0.6,
+          },
+          animated: true,
+        }}
+        fitViewOptions={{
+          padding: 0.5,
+          minZoom: 0.5,
+          maxZoom: 1,
+          duration: 800,
+        }}
+        nodesDraggable={true}
+        nodesConnectable={false}
+        elementsSelectable={true}
+        zoomOnScroll={true}
+        panOnScroll={false}
+        panOnDrag={true}
+        snapToGrid={true}
+        snapGrid={[10, 10]}
+        key={focusNodeId}
+      >
+        <Background />
+        <Controls />
+        <MiniMap nodeStrokeWidth={3} zoomable pannable />
+      </ReactFlow>
+      {hoveredNode && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 20,
+            right: 20,
+            backgroundColor: 'white',
+            padding: '8px 12px',
+            borderRadius: '4px',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+            fontSize: '12px',
+            zIndex: 1000,
+            minWidth: '200px',
+          }}
+        >
+          <div>
+            <strong>パス:</strong> {hoveredNode}
+          </div>
+          <div>
+            <strong>タイプ:</strong> {nodes.find((n) => n.id === hoveredNode)?.data?.info?.type}
+          </div>
+          {nodes.find((n) => n.id === hoveredNode)?.data?.info?.type === 'vue' && (
+            <>
+              <div>
+                <strong>API スタイル:</strong>{' '}
+                {nodes.find((n) => n.id === hoveredNode)?.data?.info?.scriptType || 'Options API'}
+              </div>
+              <div>
+                <strong>言語:</strong>{' '}
+                {nodes.find((n) => n.id === hoveredNode)?.data?.info?.scriptLang || 'js'}
+              </div>
+            </>
+          )}
+          <div>
+            <strong>依存数:</strong>{' '}
+            {nodes.find((n) => n.id === hoveredNode)?.data?.info?.dependencies || 0}
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 

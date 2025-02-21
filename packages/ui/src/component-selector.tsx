@@ -17,6 +17,7 @@ const CATEGORIES = {
 
 export function ComponentSelector({ nodes, onSelect, selectedNodeId }: ComponentSelectorProps) {
   const [searchQuery, setSearchQuery] = useState('');
+  const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set());
 
   // ノードをカテゴリ別に分類
   const categorizedNodes = Array.from(nodes.values()).reduce((acc, node) => {
@@ -42,6 +43,19 @@ export function ComponentSelector({ nodes, onSelect, selectedNodeId }: Component
   const filterNode = (node: DependencyNode) =>
     node.id.toLowerCase().includes(searchQuery.toLowerCase());
 
+  // カテゴリの折りたたみ状態を切り替える
+  const toggleCategory = (category: string) => {
+    setCollapsedCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(category)) {
+        next.delete(category);
+      } else {
+        next.add(category);
+      }
+      return next;
+    });
+  };
+
   return (
     <div className="component-selector">
       <div className="search-bar">
@@ -60,11 +74,16 @@ export function ComponentSelector({ nodes, onSelect, selectedNodeId }: Component
 
           return (
             <div key={type} className="category">
-              <div className="category-header">
-                {CATEGORIES[type as keyof typeof CATEGORIES] || type}
+              <div className="category-header" onClick={() => toggleCategory(type)}>
+                <div className="category-title">
+                  <span className="collapse-icon">
+                    {collapsedCategories.has(type) ? '▶' : '▼'}
+                  </span>
+                  {CATEGORIES[type as keyof typeof CATEGORIES] || type}
+                </div>
                 <span className="count">{filteredNodes.length}</span>
               </div>
-              <div className="node-list">
+              <div className={`node-list ${collapsedCategories.has(type) ? 'collapsed' : ''}`}>
                 {filteredNodes.map((node) => (
                   <div
                     key={node.id}
@@ -122,6 +141,23 @@ export function ComponentSelector({ nodes, onSelect, selectedNodeId }: Component
           justify-content: space-between;
           text-transform: uppercase;
           letter-spacing: 0.5px;
+          cursor: pointer;
+          user-select: none;
+        }
+
+        .category-header:hover {
+          background: #e9ecef;
+        }
+
+        .category-title {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+
+        .collapse-icon {
+          font-size: 10px;
+          color: #666;
         }
 
         .count {
@@ -134,6 +170,13 @@ export function ComponentSelector({ nodes, onSelect, selectedNodeId }: Component
 
         .node-list {
           padding: 4px 0;
+          transition: max-height 0.2s ease-out;
+          overflow: hidden;
+        }
+
+        .node-list.collapsed {
+          max-height: 0;
+          padding: 0;
         }
 
         .node {

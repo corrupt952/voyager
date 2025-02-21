@@ -483,7 +483,7 @@ function DependencyGraphViewerInner({ graph, focusNodeId }: DependencyGraphViewe
   const [nodes, setNodes] = React.useState<any[]>([]);
   const [edges, setEdges] = React.useState<any[]>([]);
   const [hoveredNode, setHoveredNode] = React.useState<string | null>(null);
-  const { fitView } = useReactFlow();
+  const { fitView, setViewport } = useReactFlow();
 
   const onNodesChange = React.useCallback(
     (changes: any) => setNodes((nds) => applyNodeChanges(changes, nds)),
@@ -534,14 +534,35 @@ function DependencyGraphViewerInner({ graph, focusNodeId }: DependencyGraphViewe
     setNodes(layoutedNodes);
     setEdges(layoutedEdges);
 
+    // 選択されたノードの位置を取得
+    const selectedNode = layoutedNodes.find((node) => node.id === focusNode.relativePath);
+
     setTimeout(() => {
       fitView({
-        padding: 0.5,
-        minZoom: 0.5,
-        maxZoom: 1,
+        padding: 0.2,
+        minZoom: 1.0,
+        maxZoom: 4.0,
         duration: 800,
       });
-    }, 0);
+
+      // 選択されたノードが中心になるように調整
+      if (selectedNode) {
+        const x = selectedNode.position.x;
+        const y = selectedNode.position.y;
+        const zoom = 2.0;
+        const centerX = window.innerWidth / 2;
+        const centerY = window.innerHeight / 2;
+
+        const transform = {
+          x: centerX - x * zoom,
+          y: centerY - y * zoom,
+          zoom: zoom,
+        };
+
+        // 中心位置とズームレベルを設定
+        setViewport(transform);
+      }
+    }, 100);
   }, [graph, focusNodeId, fitView]);
 
   return (
@@ -553,7 +574,7 @@ function DependencyGraphViewerInner({ graph, focusNodeId }: DependencyGraphViewe
         onNodeMouseEnter={onNodeMouseEnter}
         onNodeMouseLeave={onNodeMouseLeave}
         minZoom={0.1}
-        maxZoom={1.5}
+        maxZoom={4.0}
         defaultEdgeOptions={{
           type: 'smoothstep',
           style: {
@@ -566,7 +587,7 @@ function DependencyGraphViewerInner({ graph, focusNodeId }: DependencyGraphViewe
         fitViewOptions={{
           padding: 0.5,
           minZoom: 0.5,
-          maxZoom: 1,
+          maxZoom: 4.0,
           duration: 800,
         }}
         nodesDraggable={true}

@@ -27,8 +27,14 @@ export function ComponentSelector({ nodes, onSelect, selectedNodeId }: Component
     return acc;
   }, new Map<string, DependencyNode[]>());
 
+  // ノードをカテゴリ順にソート
+  const orderedCategories = Object.keys(CATEGORIES) as (keyof typeof CATEGORIES)[];
+  const sortedEntries = orderedCategories
+    .map((category) => [category, categorizedNodes.get(category)])
+    .filter(([_, nodes]) => nodes && nodes.length > 0) as [string, DependencyNode[]][];
+
   // 各カテゴリ内でノードを名前でソート
-  categorizedNodes.forEach((nodes) => {
+  sortedEntries.forEach(([_, nodes]) => {
     nodes.sort((a, b) => a.id.localeCompare(b.id));
   });
 
@@ -48,7 +54,7 @@ export function ComponentSelector({ nodes, onSelect, selectedNodeId }: Component
       </div>
 
       <div className="category-list">
-        {Array.from(categorizedNodes.entries()).map(([type, nodes]) => {
+        {sortedEntries.map(([type, nodes]) => {
           const filteredNodes = nodes.filter(filterNode);
           if (filteredNodes.length === 0) return null;
 

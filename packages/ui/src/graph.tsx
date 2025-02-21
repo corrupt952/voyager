@@ -113,92 +113,302 @@ export interface DependencyGraphViewerProps {
   focusNodeId: string;
 }
 
+// 依存関係の重みを計算するインターフェースとヘルパー関数
+interface NodeWeight {
+  level: number;
+  weight: number;
+  directDependencies: Set<string>;
+  allDependencies: Set<string>;
+  dependencyDepth: number; // 依存の深さ
+  dependentDepth: number; // 被依存の深さ
+  group?: string; // サブグループ識別子
+}
+
+const calculateNodeWeights = (
+  nodes: any[],
+  edges: any[],
+  focusNodeId: string
+): Map<string, NodeWeight> => {
+  const weights = new Map<string, NodeWeight>();
+
+  // 初期化
+  nodes.forEach((node) => {
+    weights.set(node.id, {
+      level: 0,
+      weight: 0,
+      directDependencies: new Set<string>(),
+      allDependencies: new Set<string>(),
+      dependencyDepth: 0,
+      dependentDepth: 0,
+    });
+  });
+
+  // 直接の依存関係を記録
+  edges.forEach((edge) => {
+    const sourceWeight = weights.get(edge.source);
+    const targetWeight = weights.get(edge.target);
+    if (sourceWeight && targetWeight) {
+      sourceWeight.directDependencies.add(edge.target);
+    }
+  });
+
+  // 依存の深さを計算
+  const calculateDependencyDepth = (nodeId: string, visited: Set<string>, depth: number) => {
+    const weight = weights.get(nodeId);
+    if (!weight || visited.has(nodeId)) return depth;
+
+    visited.add(nodeId);
+    weight.dependencyDepth = Math.max(weight.dependencyDepth, depth);
+
+    let maxChildDepth = depth;
+    weight.directDependencies.forEach((depId) => {
+      const childDepth = calculateDependencyDepth(depId, new Set(visited), depth + 1);
+      maxChildDepth = Math.max(maxChildDepth, childDepth);
+    });
+
+    return maxChildDepth;
+  };
+
+  // 被依存の深さを計算
+  const calculateDependentDepth = (nodeId: string, visited: Set<string>, depth: number) => {
+    const weight = weights.get(nodeId);
+    if (!weight || visited.has(nodeId)) return depth;
+
+    visited.add(nodeId);
+    weight.dependentDepth = Math.max(weight.dependentDepth, depth);
+
+    let maxParentDepth = depth;
+    edges.forEach((edge) => {
+      if (edge.target === nodeId && !visited.has(edge.source)) {
+        const parentDepth = calculateDependentDepth(edge.source, new Set(visited), depth + 1);
+        maxParentDepth = Math.max(maxParentDepth, parentDepth);
+      }
+    });
+
+    return maxParentDepth;
+  };
+
+  // 深さの計算を実行
+  calculateDependencyDepth(focusNodeId, new Set(), 0);
+  calculateDependentDepth(focusNodeId, new Set(), 0);
+
+  // グループの割り当て
+  const assignGroups = () => {
+    const groups = new Map<string, Set<string>>();
+
+    nodes.forEach((node) => {
+      const weight = weights.get(node.id);
+      if (!weight) return;
+
+      // 依存関係の方向性に基づいてグループを決定
+      const groupKey = `${weight.dependencyDepth}-${weight.dependentDepth}`;
+      if (!groups.has(groupKey)) {
+        groups.set(groupKey, new Set());
+      }
+      groups.get(groupKey)?.add(node.id);
+      weight.group = groupKey;
+    });
+
+    return groups;
+  };
+
+  const groups = assignGroups();
+
+  return weights;
+};
+
 const getLayoutedElements = (nodes: any[], edges: any[], focusNodeId: string) => {
-  const LEVEL_SEPARATION = 200;
+  const LEVEL_SEPARATION = 300; // 左右の間隔を適度に調整
   const NODE_VERTICAL_SPACING = 50;
   const CENTER_X = 500;
 
-  const parentMap = new Map<string, string[]>();
-  const childrenMap = new Map<string, string[]>();
+  // 依存関係の分析
+  const incomingEdges = new Map<string, string[]>();
+  const outgoingEdges = new Map<string, string[]>();
 
+  // エッジの初期化と分類
   nodes.forEach((node) => {
-    parentMap.set(node.id, []);
-    childrenMap.set(node.id, []);
+    incomingEdges.set(node.id, []);
+    outgoingEdges.set(node.id, []);
   });
-
   edges.forEach((edge) => {
-    childrenMap.get(edge.source)?.push(edge.target);
-    parentMap.get(edge.target)?.push(edge.source);
+    outgoingEdges.get(edge.source)?.push(edge.target);
+    incomingEdges.get(edge.target)?.push(edge.source);
   });
 
+  // ノードのレベルを計算
   const nodeLevels = new Map<string, number>();
-  const focusedNode = nodes.find((n) => n.id === focusNodeId) || nodes[0];
-  nodeLevels.set(focusedNode.id, 0);
 
-  const calculateParentLevels = (nodeId: string, level: number, visited: Set<string>) => {
-    if (visited.has(nodeId)) return;
-    visited.add(nodeId);
-
-    parentMap.get(nodeId)?.forEach((parentId) => {
-      nodeLevels.set(parentId, level - 1);
-      calculateParentLevels(parentId, level - 1, visited);
-    });
-  };
-
-  const calculateChildLevels = (nodeId: string, level: number, visited: Set<string>) => {
-    if (visited.has(nodeId)) return;
-    visited.add(nodeId);
-
-    childrenMap.get(nodeId)?.forEach((childId) => {
-      nodeLevels.set(childId, level + 1);
-      calculateChildLevels(childId, level + 1, visited);
-    });
-  };
-
-  calculateParentLevels(focusedNode.id, 0, new Set());
-  calculateChildLevels(focusedNode.id, 0, new Set());
-
-  const levelNodesMap = new Map<number, string[]>();
-  nodeLevels.forEach((level, nodeId) => {
-    if (!levelNodesMap.has(level)) {
-      levelNodesMap.set(level, []);
-    }
-    levelNodesMap.get(level)?.push(nodeId);
+  // 初期レベルの設定
+  nodes.forEach((node) => {
+    nodeLevels.set(node.id, 0);
   });
 
-  const nodePositions = new Map<string, { x: number; y: number }>();
-  levelNodesMap.forEach((nodeIds, level) => {
-    const levelHeight = nodeIds.length * NODE_VERTICAL_SPACING;
-    const startY = -levelHeight / 2;
+  // 各ノードの最右の依存元と最左の被依存先を計算
+  const calculateExtremeLevels = (nodeId: string): { rightmost: number; leftmost: number } => {
+    const incoming = incomingEdges.get(nodeId) || [];
+    const outgoing = outgoingEdges.get(nodeId) || [];
 
-    nodeIds.forEach((nodeId, index) => {
-      nodePositions.set(nodeId, {
-        x: CENTER_X + level * LEVEL_SEPARATION,
-        y: startY + index * NODE_VERTICAL_SPACING,
+    // このノードに依存しているノードの中で最も右にあるレベル
+    const dependentLevels = incoming.map((src) => nodeLevels.get(src) || 0);
+    const rightmostDependent = dependentLevels.length > 0 ? Math.max(...dependentLevels) : -1;
+
+    // このノードが依存しているノードの中で最も左にあるレベル
+    const dependencyLevels = outgoing.map((target) => nodeLevels.get(target) || 0);
+    const leftmostDependency =
+      dependencyLevels.length > 0 ? Math.min(...dependencyLevels) : Number.MAX_SAFE_INTEGER;
+
+    return {
+      rightmost: rightmostDependent,
+      leftmost: leftmostDependency,
+    };
+  };
+
+  // レベルの最適化（複数回の反復で収束させる）
+  const MAX_ITERATIONS = 5;
+  for (let i = 0; i < MAX_ITERATIONS; i++) {
+    let changed = false;
+    nodes.forEach((node) => {
+      const { rightmost, leftmost } = calculateExtremeLevels(node.id);
+
+      let newLevel;
+      if (rightmost === -1 && leftmost === Number.MAX_SAFE_INTEGER) {
+        // 孤立したノード
+        newLevel = 0;
+      } else if (rightmost === -1) {
+        // 依存されていないノード
+        newLevel = leftmost - 1;
+      } else if (leftmost === Number.MAX_SAFE_INTEGER) {
+        // 依存していないノード
+        newLevel = rightmost + 1;
+      } else {
+        // 中間ノード
+        newLevel = Math.max(rightmost + 1, leftmost - 1);
+      }
+
+      if (nodeLevels.get(node.id) !== newLevel) {
+        changed = true;
+        nodeLevels.set(node.id, newLevel);
+      }
+    });
+
+    if (!changed) break;
+  }
+
+  // レベルの正規化（最小値を0にする）
+  const minLevel = Math.min(...Array.from(nodeLevels.values()));
+  nodeLevels.forEach((level, nodeId) => {
+    nodeLevels.set(nodeId, level - minLevel);
+  });
+
+  // 垂直位置の計算
+  const calculateVerticalPositions = () => {
+    const verticalRanks = new Map<string, number>();
+    const levelGroups = new Map<number, string[]>();
+
+    // レベルごとにノードをグループ化
+    nodeLevels.forEach((level, nodeId) => {
+      if (!levelGroups.has(level)) {
+        levelGroups.set(level, []);
+      }
+      levelGroups.get(level)?.push(nodeId);
+    });
+
+    // 各レベル内でのノードの順序を最適化
+    levelGroups.forEach((nodeIds, level) => {
+      // 親子関係に基づいてノードをグループ化
+      const nodeGroups: { nodeId: string; parentId: string | null }[][] = [];
+      const processedNodes = new Set<string>();
+
+      // まず親子関係のあるノードを処理
+      nodeIds.forEach((nodeId) => {
+        if (processedNodes.has(nodeId)) return;
+
+        const parents = incomingEdges.get(nodeId) || [];
+        if (parents.length > 0) {
+          // 親が存在する場合、その親に関連する全ての子ノードをグループ化
+          const parentId = parents[0];
+          const siblingNodes = nodeIds.filter((id) =>
+            (incomingEdges.get(id) || []).includes(parentId)
+          );
+
+          nodeGroups.push(
+            siblingNodes.map((id) => ({
+              nodeId: id,
+              parentId,
+            }))
+          );
+
+          siblingNodes.forEach((id) => processedNodes.add(id));
+        }
+      });
+
+      // 残りのノードを処理
+      const remainingNodes = nodeIds.filter((id) => !processedNodes.has(id));
+      remainingNodes.forEach((nodeId) => {
+        nodeGroups.push([{ nodeId, parentId: null }]);
+      });
+
+      // グループごとに垂直位置を割り当て
+      let currentY = 0;
+      nodeGroups.forEach((group, groupIndex) => {
+        group.forEach((node, nodeIndex) => {
+          verticalRanks.set(node.nodeId, currentY + nodeIndex * NODE_VERTICAL_SPACING);
+        });
+        currentY += (group.length + 1) * NODE_VERTICAL_SPACING; // グループ間にも余白を追加
       });
     });
+
+    return verticalRanks;
+  };
+
+  const verticalPositions = calculateVerticalPositions();
+
+  // ノードの位置を計算
+  const nodePositions = new Map<string, { x: number; y: number }>();
+  nodes.forEach((node) => {
+    const level = nodeLevels.get(node.id) || 0;
+    nodePositions.set(node.id, {
+      x: CENTER_X + level * LEVEL_SEPARATION,
+      y: verticalPositions.get(node.id) || 0,
+    });
   });
 
+  // ノードの配置を適用
   const layoutedNodes = nodes.map((node) => {
     const position = nodePositions.get(node.id) || { x: 0, y: 0 };
+    const level = nodeLevels.get(node.id) || 0;
+
     return {
       ...node,
       position,
       draggable: true,
       sourcePosition: Position.Right,
       targetPosition: Position.Left,
+      style: {
+        ...node.style,
+        zIndex: level,
+      },
     };
   });
 
-  const layoutedEdges = edges.map((edge) => ({
-    ...edge,
-    type: 'smoothstep',
-    style: {
-      stroke: '#888',
-      strokeWidth: 2,
-      opacity: 0.6,
-    },
-  }));
+  // エッジのスタイル
+  const layoutedEdges = edges.map((edge) => {
+    const sourceLevel = nodeLevels.get(edge.source) || 0;
+    const targetLevel = nodeLevels.get(edge.target) || 0;
+    const levelDiff = Math.abs(targetLevel - sourceLevel);
+
+    return {
+      ...edge,
+      type: 'smoothstep',
+      style: {
+        stroke: '#2196f3',
+        strokeWidth: levelDiff === 1 ? 2 : 1,
+        opacity: Math.max(0.4, 1 - levelDiff * 0.2),
+      },
+      animated: levelDiff === 1,
+    };
+  });
 
   return { nodes: layoutedNodes, edges: layoutedEdges };
 };

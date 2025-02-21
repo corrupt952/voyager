@@ -35,7 +35,7 @@ export function ComponentSelector({ nodes, onSelect, selectedNodeId }: Component
 
   // 各カテゴリ内でノードを名前でソート
   sortedEntries.forEach(([_, nodes]) => {
-    nodes.sort((a, b) => a.id.localeCompare(b.id));
+    nodes.sort((a, b) => getNodeLabel(a.id).localeCompare(getNodeLabel(b.id)));
   });
 
   // 検索フィルター

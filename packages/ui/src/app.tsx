@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { DependencyGraphViewer } from './graph';
 import { ComponentSelector } from './component-selector';
 import '@xyflow/react/dist/style.css';
-import { DependencyGraph } from '@voyager/core';
+import { DependencyGraph } from '@voyager-vue/core';
 
 // グローバル変数からグラフデータを取得
 declare global {

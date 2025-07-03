@@ -10,7 +10,7 @@ import {
   ReactFlowProvider,
 } from '@xyflow/react';
 import dagre from '@dagrejs/dagre';
-import { DependencyGraph } from '@voyager/core';
+import { DependencyGraph } from '@voyager-vue/core';
 import { getNodeLabel } from './utils';
 import '@xyflow/react/dist/style.css';
 

@@ -64,7 +64,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@voyager/core': resolve(__dirname, '../core/src'),
+      '@voyager-vue/core': resolve(__dirname, '../core/src'),
     },
   },
 });

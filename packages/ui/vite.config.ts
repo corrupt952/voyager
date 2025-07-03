@@ -58,13 +58,13 @@ export default defineConfig({
       fileName: 'index',
     },
     rollupOptions: {
-      external: ['react', 'react-dom', 'reactflow', '@voyager/core'],
+      external: ['react', 'react-dom', 'reactflow', '@voyager-vue/core'],
       output: {
         globals: {
           react: 'React',
           'react-dom': 'ReactDOM',
           reactflow: 'ReactFlow',
-          '@voyager/core': 'VoyagerCore',
+          '@voyager-vue/core': 'VoyagerCore',
         },
       },
     },

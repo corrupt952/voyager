@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { DependencyNode } from '@voyager/core';
+import { DependencyNode } from '@voyager-vue/core';
 import { getNodeLabel } from './utils';
 
 interface ComponentSelectorProps {

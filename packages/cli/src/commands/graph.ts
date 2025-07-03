@@ -11,7 +11,7 @@ const __dirname = dirname(__filename);
 
 // HTMLテンプレートを読み込む
 const template = readFileSync(
-  join(__dirname, '../../node_modules/@voyager/ui/dist/template.html'),
+  join(__dirname, '../../node_modules/@voyager-vue/ui/dist/template.html'),
   'utf-8'
 );
 
@@ -22,7 +22,11 @@ export function createGraphCommand(): Command {
     .description('Generate interactive HTML dependency graph')
     .argument('<directory>', 'Target directory containing Vue components')
     .option('-o, --output <file>', 'Output file path', 'voyager-graph.html')
-    .option('--ignore <patterns...>', 'Glob patterns to ignore (in addition to default patterns)', [])
+    .option(
+      '--ignore <patterns...>',
+      'Glob patterns to ignore (in addition to default patterns)',
+      []
+    )
     .option(
       '--ignore-only <patterns...>',
       'Use only these glob patterns to ignore (override default patterns)',

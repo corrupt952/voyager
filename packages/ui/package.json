@@ -25,6 +25,7 @@
     "react-dom": "^19.0.0"
   },
   "dependencies": {
+    "@dagrejs/dagre": "^1.1.5",
     "@voyager/core": "workspace:*",
     "@xyflow/react": "^12.0.0"
   },

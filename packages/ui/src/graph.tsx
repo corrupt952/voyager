@@ -9,6 +9,7 @@ import {
   useReactFlow,
   ReactFlowProvider,
 } from '@xyflow/react';
+import dagre from '@dagrejs/dagre';
 import { DependencyGraph } from '@voyager/core';
 import { getNodeLabel } from './utils';
 import '@xyflow/react/dist/style.css';
@@ -217,196 +218,199 @@ const calculateNodeWeights = (
   return weights;
 };
 
-const getLayoutedElements = (nodes: any[], edges: any[], focusNodeId: string) => {
-  const LEVEL_SEPARATION = 300; // 左右の間隔を適度に調整
-  const NODE_VERTICAL_SPACING = 50;
-  const CENTER_X = 500;
-
-  // 依存関係の分析
-  const incomingEdges = new Map<string, string[]>();
-  const outgoingEdges = new Map<string, string[]>();
-
-  // エッジの初期化と分類
-  nodes.forEach((node) => {
-    incomingEdges.set(node.id, []);
-    outgoingEdges.set(node.id, []);
+// Calculate node levels based on dependency relationships
+const calculateNodeLevels = (nodes: any[], edges: any[]): Map<string, number> => {
+  const levels = new Map<string, number>();
+  const incomingEdges = new Map<string, Set<string>>();
+  const outgoingEdges = new Map<string, Set<string>>();
+  
+  // Initialize edge maps
+  nodes.forEach(node => {
+    incomingEdges.set(node.id, new Set());
+    outgoingEdges.set(node.id, new Set());
+    levels.set(node.id, 0);
   });
-  edges.forEach((edge) => {
-    outgoingEdges.get(edge.source)?.push(edge.target);
-    incomingEdges.get(edge.target)?.push(edge.source);
+  
+  // Build edge relationships
+  edges.forEach(edge => {
+    incomingEdges.get(edge.target)?.add(edge.source);
+    outgoingEdges.get(edge.source)?.add(edge.target);
   });
-
-  // ノードのレベルを計算
-  const nodeLevels = new Map<string, number>();
-
-  // 初期レベルの設定
-  nodes.forEach((node) => {
-    nodeLevels.set(node.id, 0);
-  });
-
-  // 各ノードの最右の依存元と最左の被依存先を計算
-  const calculateExtremeLevels = (nodeId: string): { rightmost: number; leftmost: number } => {
-    const incoming = incomingEdges.get(nodeId) || [];
-    const outgoing = outgoingEdges.get(nodeId) || [];
-
-    // このノードに依存しているノードの中で最も右にあるレベル
-    const dependentLevels = incoming.map((src) => nodeLevels.get(src) || 0);
-    const rightmostDependent = dependentLevels.length > 0 ? Math.max(...dependentLevels) : -1;
-
-    // このノードが依存しているノードの中で最も左にあるレベル
-    const dependencyLevels = outgoing.map((target) => nodeLevels.get(target) || 0);
-    const leftmostDependency =
-      dependencyLevels.length > 0 ? Math.min(...dependencyLevels) : Number.MAX_SAFE_INTEGER;
-
-    return {
-      rightmost: rightmostDependent,
-      leftmost: leftmostDependency,
-    };
-  };
-
-  // レベルの最適化（複数回の反復で収束させる）
-  const MAX_ITERATIONS = 5;
-  for (let i = 0; i < MAX_ITERATIONS; i++) {
-    let changed = false;
-    nodes.forEach((node) => {
-      const { rightmost, leftmost } = calculateExtremeLevels(node.id);
-
-      let newLevel;
-      if (rightmost === -1 && leftmost === Number.MAX_SAFE_INTEGER) {
-        // 孤立したノード
-        newLevel = 0;
-      } else if (rightmost === -1) {
-        // 依存されていないノード
-        newLevel = leftmost - 1;
-      } else if (leftmost === Number.MAX_SAFE_INTEGER) {
-        // 依存していないノード
-        newLevel = rightmost + 1;
-      } else {
-        // 中間ノード
-        newLevel = Math.max(rightmost + 1, leftmost - 1);
-      }
-
-      if (nodeLevels.get(node.id) !== newLevel) {
-        changed = true;
-        nodeLevels.set(node.id, newLevel);
+  
+  // Find nodes with no dependencies (root nodes)
+  const rootNodes = nodes.filter(node => incomingEdges.get(node.id)?.size === 0);
+  
+  // BFS to assign levels
+  const visited = new Set<string>();
+  const queue: { id: string; level: number }[] = rootNodes.map(node => ({ id: node.id, level: 0 }));
+  
+  while (queue.length > 0) {
+    const { id, level } = queue.shift()!;
+    
+    if (visited.has(id)) continue;
+    visited.add(id);
+    
+    // Update level (take maximum to handle nodes with multiple paths)
+    const currentLevel = levels.get(id) || 0;
+    levels.set(id, Math.max(currentLevel, level));
+    
+    // Add children to queue
+    const children = outgoingEdges.get(id) || new Set();
+    children.forEach(childId => {
+      if (!visited.has(childId)) {
+        queue.push({ id: childId, level: level + 1 });
       }
     });
-
-    if (!changed) break;
   }
-
-  // レベルの正規化（最小値を0にする）
-  const minLevel = Math.min(...Array.from(nodeLevels.values()));
-  nodeLevels.forEach((level, nodeId) => {
-    nodeLevels.set(nodeId, level - minLevel);
-  });
-
-  // 垂直位置の計算
-  const calculateVerticalPositions = () => {
-    const verticalRanks = new Map<string, number>();
-    const levelGroups = new Map<number, string[]>();
-
-    // レベルごとにノードをグループ化
-    nodeLevels.forEach((level, nodeId) => {
-      if (!levelGroups.has(level)) {
-        levelGroups.set(level, []);
+  
+  // Handle nodes that weren't reached (cycles or isolated nodes)
+  nodes.forEach(node => {
+    if (!visited.has(node.id)) {
+      // For cyclic or isolated nodes, calculate based on their connections
+      const incoming = incomingEdges.get(node.id) || new Set();
+      const outgoing = outgoingEdges.get(node.id) || new Set();
+      
+      if (incoming.size > 0) {
+        // Place after its dependencies
+        const maxIncomingLevel = Math.max(...Array.from(incoming).map(id => levels.get(id) || 0));
+        levels.set(node.id, maxIncomingLevel + 1);
+      } else if (outgoing.size > 0) {
+        // Place before its dependents
+        const minOutgoingLevel = Math.min(...Array.from(outgoing).map(id => levels.get(id) || 0));
+        levels.set(node.id, Math.max(0, minOutgoingLevel - 1));
       }
-      levelGroups.get(level)?.push(nodeId);
-    });
+    }
+  });
+  
+  return levels;
+};
 
-    // 各レベル内でのノードの順序を最適化
-    levelGroups.forEach((nodeIds, level) => {
-      // 親子関係に基づいてノードをグループ化
-      const nodeGroups: { nodeId: string; parentId: string | null }[][] = [];
-      const processedNodes = new Set<string>();
-
-      // まず親子関係のあるノードを処理
-      nodeIds.forEach((nodeId) => {
-        if (processedNodes.has(nodeId)) return;
-
-        const parents = incomingEdges.get(nodeId) || [];
-        if (parents.length > 0) {
-          // 親が存在する場合、その親に関連する全ての子ノードをグループ化
-          const parentId = parents[0];
-          const siblingNodes = nodeIds.filter((id) =>
-            (incomingEdges.get(id) || []).includes(parentId)
-          );
-
-          nodeGroups.push(
-            siblingNodes.map((id) => ({
-              nodeId: id,
-              parentId,
-            }))
-          );
-
-          siblingNodes.forEach((id) => processedNodes.add(id));
-        }
-      });
-
-      // 残りのノードを処理
-      const remainingNodes = nodeIds.filter((id) => !processedNodes.has(id));
-      remainingNodes.forEach((nodeId) => {
-        nodeGroups.push([{ nodeId, parentId: null }]);
-      });
-
-      // グループごとに垂直位置を割り当て
-      let currentY = 0;
-      nodeGroups.forEach((group, groupIndex) => {
-        group.forEach((node, nodeIndex) => {
-          verticalRanks.set(node.nodeId, currentY + nodeIndex * NODE_VERTICAL_SPACING);
-        });
-        currentY += (group.length + 1) * NODE_VERTICAL_SPACING; // グループ間にも余白を追加
-      });
-    });
-
-    return verticalRanks;
-  };
-
-  const verticalPositions = calculateVerticalPositions();
-
-  // ノードの位置を計算
-  const nodePositions = new Map<string, { x: number; y: number }>();
-  nodes.forEach((node) => {
-    const level = nodeLevels.get(node.id) || 0;
-    nodePositions.set(node.id, {
-      x: CENTER_X + level * LEVEL_SEPARATION,
-      y: verticalPositions.get(node.id) || 0,
-    });
+const getLayoutedElements = (nodes: any[], edges: any[], focusNodeId: string) => {
+  // Create a new dagre graph
+  const dagreGraph = new dagre.graphlib.Graph();
+  dagreGraph.setDefaultEdgeLabel(() => ({}));
+  
+  // Set graph layout options
+  dagreGraph.setGraph({
+    rankdir: 'LR', // Left to Right layout for dependency flow
+    align: 'UL', // Up-Left alignment to keep same rank nodes aligned
+    nodesep: 50, // Vertical separation between nodes
+    ranksep: 150, // Horizontal separation between ranks
+    edgesep: 25, // Separation between edges
+    marginx: 50,
+    marginy: 50,
+    ranker: 'tight-tree', // Use tight-tree algorithm for better rank assignment
   });
 
-  // ノードの配置を適用
-  const layoutedNodes = nodes.map((node) => {
-    const position = nodePositions.get(node.id) || { x: 0, y: 0 };
-    const level = nodeLevels.get(node.id) || 0;
+  // Calculate node levels based on dependencies
+  const nodeLevels = calculateNodeLevels(nodes, edges);
 
+  // Group nodes by their path structure (e.g., components/atoms, components/molecules)
+  const nodeGroups = new Map<string, string[]>();
+  nodes.forEach(node => {
+    const pathParts = node.id.split('/');
+    if (pathParts.length >= 2) {
+      // Group by first two levels of path (e.g., "components/atoms")
+      const groupKey = pathParts.slice(0, 2).join('/');
+      if (!nodeGroups.has(groupKey)) {
+        nodeGroups.set(groupKey, []);
+      }
+      nodeGroups.get(groupKey)?.push(node.id);
+    }
+  });
+
+  // Add nodes to the graph with rank constraints
+  nodes.forEach((node) => {
+    // Estimate node dimensions based on label length
+    const labelLength = node.data.label.length;
+    const width = Math.max(150, labelLength * 8);
+    const height = 50;
+    
+    const nodeData: any = { 
+      width, 
+      height,
+      label: node.data.label,
+    };
+
+    // Set rank if we have a level for this node
+    const level = nodeLevels.get(node.id);
+    if (level !== undefined) {
+      nodeData.rank = level;
+    }
+    
+    dagreGraph.setNode(node.id, nodeData);
+  });
+
+  // Add invisible edges between nodes in the same group to keep them together
+  nodeGroups.forEach((nodeIds) => {
+    if (nodeIds.length > 1) {
+      for (let i = 0; i < nodeIds.length - 1; i++) {
+        // Only add constraint if nodes are at the same level
+        const level1 = nodeLevels.get(nodeIds[i]);
+        const level2 = nodeLevels.get(nodeIds[i + 1]);
+        if (level1 === level2) {
+          dagreGraph.setEdge(nodeIds[i], nodeIds[i + 1], {
+            weight: 0,
+            style: { display: 'none' }
+          });
+        }
+      }
+    }
+  });
+
+  // Add edges to the graph
+  edges.forEach((edge) => {
+    dagreGraph.setEdge(edge.source, edge.target);
+  });
+
+  // Run the layout algorithm
+  dagre.layout(dagreGraph);
+
+  // Get the graph dimensions for centering
+  const graphInfo = dagreGraph.graph();
+  const graphWidth = graphInfo.width || 800;
+  const graphHeight = graphInfo.height || 600;
+
+  // Apply the calculated positions to nodes
+  const layoutedNodes = nodes.map((node) => {
+    const nodeWithPosition = dagreGraph.node(node.id);
+    const nodeWidth = nodeWithPosition.width;
+    const nodeHeight = nodeWithPosition.height;
+    
     return {
       ...node,
-      position,
+      position: {
+        // dagre gives center positions, React Flow needs top-left
+        x: nodeWithPosition.x - nodeWidth / 2,
+        y: nodeWithPosition.y - nodeHeight / 2,
+      },
       draggable: true,
       sourcePosition: Position.Right,
       targetPosition: Position.Left,
       style: {
         ...node.style,
-        zIndex: level,
+        // Highlight the focused node
+        ...(node.id === focusNodeId ? { 
+          boxShadow: '0 0 12px 4px rgba(66, 184, 131, 0.4)',
+          border: '2px solid #42b883',
+        } : {}),
       },
     };
   });
 
-  // エッジのスタイル
+  // Style edges based on their relationship to the focused node
   const layoutedEdges = edges.map((edge) => {
-    const sourceLevel = nodeLevels.get(edge.source) || 0;
-    const targetLevel = nodeLevels.get(edge.target) || 0;
-    const levelDiff = Math.abs(targetLevel - sourceLevel);
-
+    const isDirectlyConnected = edge.source === focusNodeId || edge.target === focusNodeId;
+    
     return {
       ...edge,
       type: 'smoothstep',
       style: {
-        stroke: '#2196f3',
-        strokeWidth: levelDiff === 1 ? 2 : 1,
-        opacity: Math.max(0.4, 1 - levelDiff * 0.2),
+        stroke: isDirectlyConnected ? '#42b883' : '#2196f3',
+        strokeWidth: isDirectlyConnected ? 3 : 2,
+        opacity: isDirectlyConnected ? 1 : 0.6,
       },
-      animated: levelDiff === 1,
+      animated: isDirectlyConnected,
     };
   });
 
@@ -483,7 +487,7 @@ function DependencyGraphViewerInner({ graph, focusNodeId }: DependencyGraphViewe
   const [nodes, setNodes] = React.useState<any[]>([]);
   const [edges, setEdges] = React.useState<any[]>([]);
   const [hoveredNode, setHoveredNode] = React.useState<string | null>(null);
-  const { fitView, setViewport } = useReactFlow();
+  const { fitView } = useReactFlow();
 
   const onNodesChange = React.useCallback(
     (changes: any) => setNodes((nds) => applyNodeChanges(changes, nds)),
@@ -534,34 +538,9 @@ function DependencyGraphViewerInner({ graph, focusNodeId }: DependencyGraphViewe
     setNodes(layoutedNodes);
     setEdges(layoutedEdges);
 
-    // 選択されたノードの位置を取得
-    const selectedNode = layoutedNodes.find((node) => node.id === focusNode.relativePath);
-
+    // Simple fitView after layout
     setTimeout(() => {
-      fitView({
-        padding: 0.2,
-        minZoom: 1.0,
-        maxZoom: 4.0,
-        duration: 800,
-      });
-
-      // 選択されたノードが中心になるように調整
-      if (selectedNode) {
-        const x = selectedNode.position.x;
-        const y = selectedNode.position.y;
-        const zoom = 2.0;
-        const centerX = window.innerWidth / 2;
-        const centerY = window.innerHeight / 2;
-
-        const transform = {
-          x: centerX - x * zoom,
-          y: centerY - y * zoom,
-          zoom: zoom,
-        };
-
-        // 中心位置とズームレベルを設定
-        setViewport(transform);
-      }
+      fitView();
     }, 100);
   }, [graph, focusNodeId, fitView]);
 
@@ -573,22 +552,9 @@ function DependencyGraphViewerInner({ graph, focusNodeId }: DependencyGraphViewe
         onNodesChange={onNodesChange}
         onNodeMouseEnter={onNodeMouseEnter}
         onNodeMouseLeave={onNodeMouseLeave}
-        minZoom={0.1}
-        maxZoom={4.0}
-        defaultEdgeOptions={{
-          type: 'smoothstep',
-          style: {
-            stroke: '#888',
-            strokeWidth: 2,
-            opacity: 0.6,
-          },
-          animated: true,
-        }}
+        fitView
         fitViewOptions={{
-          padding: 0.5,
-          minZoom: 0.5,
-          maxZoom: 4.0,
-          duration: 800,
+          padding: 0.2,
         }}
         nodesDraggable={true}
         nodesConnectable={false}
@@ -598,7 +564,6 @@ function DependencyGraphViewerInner({ graph, focusNodeId }: DependencyGraphViewe
         panOnDrag={true}
         snapToGrid={true}
         snapGrid={[10, 10]}
-        key={focusNodeId}
       >
         <Background />
         <Controls />

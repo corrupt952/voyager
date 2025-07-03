@@ -61,7 +61,7 @@ export function ComponentSelector({ nodes, onSelect, selectedNodeId }: Component
       <div className="search-bar">
         <input
           type="text"
-          placeholder="検索..."
+          placeholder="Search..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />

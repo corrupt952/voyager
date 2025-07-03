@@ -166,7 +166,7 @@ export function createDepsCommand(): Command {
             },
           });
 
-          analyzer.analyze(files.map((f) => f.absolutePath));
+          analyzer.analyze(files.map((f: any) => f.absolutePath));
           const graph = analyzer.getGraph();
 
           // 対象ファイルのノードを取得

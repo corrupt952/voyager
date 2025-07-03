@@ -10,7 +10,7 @@ import {
   ReactFlowProvider,
 } from '@xyflow/react';
 import dagre from '@dagrejs/dagre';
-import { DependencyGraph } from '@voyager-vue/core';
+import { DependencyGraph, DependencyNode, DependencyEdge } from '@voyager-vue/core';
 import { getNodeLabel } from './utils';
 import '@xyflow/react/dist/style.css';
 
@@ -415,14 +415,14 @@ function extractDependencySubgraph(graph: DependencyGraph, focusNodeId: string) 
     relevantNodes.add(nodeId);
 
     if (direction === 'parent') {
-      Array.from(graph.edges).forEach((edge) => {
+      Array.from(graph.edges).forEach((edge: DependencyEdge) => {
         if (edge.to === nodeId) {
           relevantEdges.add(`${edge.from}-${edge.to}`);
           traverse(edge.from, 'parent', visited);
         }
       });
     } else {
-      Array.from(graph.edges).forEach((edge) => {
+      Array.from(graph.edges).forEach((edge: DependencyEdge) => {
         if (edge.from === nodeId) {
           relevantEdges.add(`${edge.from}-${edge.to}`);
           traverse(edge.to, 'child', visited);
@@ -436,7 +436,7 @@ function extractDependencySubgraph(graph: DependencyGraph, focusNodeId: string) 
 
   const nodes = Array.from(relevantNodes)
     .map((nodeId) => {
-      const nodeData = Array.from(graph.nodes.values()).find((n) => n.id === nodeId);
+      const nodeData = Array.from(graph.nodes.values()).find((n: DependencyNode) => n.id === nodeId);
       if (!nodeData) return null;
 
       return {
@@ -490,7 +490,7 @@ function DependencyGraphViewerInner({ graph, focusNodeId }: DependencyGraphViewe
   }, []);
 
   React.useEffect(() => {
-    const focusNode = Array.from(graph.nodes.values()).find((n) => n.id === focusNodeId);
+    const focusNode = Array.from(graph.nodes.values()).find((n: DependencyNode) => n.id === focusNodeId);
     if (!focusNode) return;
 
     const { nodes: initialNodes, edges: initialEdges } = extractDependencySubgraph(
@@ -499,7 +499,7 @@ function DependencyGraphViewerInner({ graph, focusNodeId }: DependencyGraphViewe
     );
 
     const enhancedNodes = initialNodes.map((node) => {
-      const nodeInfo = Array.from(graph.nodes.values()).find((n) => n.relativePath === node.id);
+      const nodeInfo = Array.from(graph.nodes.values()).find((n: DependencyNode) => n.relativePath === node.id);
 
       return {
         ...node,

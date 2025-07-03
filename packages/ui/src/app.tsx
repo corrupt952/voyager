@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { DependencyGraphViewer } from './graph';
 import { ComponentSelector } from './component-selector';
 import '@xyflow/react/dist/style.css';
-import { DependencyGraph } from '@voyager-vue/core';
+import { DependencyGraph, DependencyNode } from '@voyager-vue/core';
 
 // グローバル変数からグラフデータを取得
 declare global {
@@ -20,7 +20,7 @@ function App() {
 
     // グラフデータ内に存在するノードかチェック
     const nodes = Array.from(window.__GRAPH_DATA__.nodes.values());
-    const node = nodes.find((n) => n.id.endsWith(hash));
+    const node = nodes.find((n: DependencyNode) => n.id.endsWith(hash));
     return node?.id || null;
   };
 
@@ -28,7 +28,7 @@ function App() {
 
   // コンポーネント選択時の処理
   const handleNodeSelect = (nodeId: string) => {
-    const node = Array.from(window.__GRAPH_DATA__.nodes.values()).find((n) => n.id === nodeId);
+    const node = Array.from(window.__GRAPH_DATA__.nodes.values()).find((n: DependencyNode) => n.id === nodeId);
     if (!node) return;
 
     window.location.hash = node.relativePath;

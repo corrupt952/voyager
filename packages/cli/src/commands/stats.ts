@@ -105,9 +105,9 @@ export function createStatsCommand(): Command {
           // 統計情報の計算
           const stats: Stats = {
             totalFiles: graph.nodes.size,
-            vueComponents: files.filter((f) => f.type === 'vue').length,
-            scriptFiles: files.filter((f) => f.type === 'script').length,
-            typeDefinitions: files.filter((f) => f.type === 'definition').length,
+            vueComponents: files.filter((f: CollectedFile) => f.type === 'vue').length,
+            scriptFiles: files.filter((f: CollectedFile) => f.type === 'script').length,
+            typeDefinitions: files.filter((f: CollectedFile) => f.type === 'definition').length,
             totalImports: Array.from(graph.edges).length,
             circularDependencies: findCircularDependencies(graph.nodes),
             orphanedComponents: [],
@@ -116,7 +116,7 @@ export function createStatsCommand(): Command {
 
           // 孤立したコンポーネント（importされていない）
           stats.orphanedComponents = Array.from(graph.nodes.values())
-            .filter((node) => node.dependencies.importedBy.length === 0)
+            .filter((node: DependencyNode) => node.dependencies.importedBy.length === 0)
             .map((node) => node.relativePath);
 
           // 最も多くimportされているファイル

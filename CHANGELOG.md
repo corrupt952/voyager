@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.2] - 2025-07-03
+
+### Changed
+- Updated package scope from `@voyager` to `@voyager-vue` for npm publishing
+- Added npm package metadata (license, repository, homepage, bugs, engines)
+- Updated import statements to use new package scope
+
+### Fixed
+- Fixed import statements to reference correct package names after scope change
+
 ## [0.0.1] - 2025-01-03
 
 ### Added

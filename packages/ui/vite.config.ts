@@ -8,6 +8,13 @@ const generateTemplate = () => {
   return {
     name: 'generate-template',
     closeBundle: async () => {
+      // Read the bundled JavaScript and CSS files
+      const jsPath = resolve(__dirname, '../cli/assets/visualizer.iife.js');
+      const cssPath = resolve(__dirname, '../cli/assets/style.css');
+      
+      const jsContent = readFileSync(jsPath, 'utf-8');
+      const cssContent = readFileSync(cssPath, 'utf-8');
+      
       const template = `
 <!DOCTYPE html>
 <html lang="en">
@@ -15,8 +22,8 @@ const generateTemplate = () => {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Vue Component Dependencies</title>
-  <link rel="stylesheet" href="./visualizer/style.css">
   <style>
+    ${cssContent}
     html, body, #root {
       width: 100%;
       height: 100%;
@@ -31,7 +38,9 @@ const generateTemplate = () => {
   <script>
     window.__GRAPH_DATA__ = null; // Will be replaced with actual data
   </script>
-  <script src="./visualizer/visualizer.iife.js"></script>
+  <script>
+    ${jsContent}
+  </script>
 </body>
 </html>
 `;

@@ -7,6 +7,7 @@ export function createHtmlTemplate(graphData: string): string {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Vue Component Dependencies</title>
   <style>
+    __CSS_CONTENT__
     html, body, #root {
       width: 100%;
       height: 100%;
@@ -21,7 +22,9 @@ export function createHtmlTemplate(graphData: string): string {
   <script>
     window.__GRAPH_DATA__ = ${graphData};
   </script>
-  <script src="./assets/visualizer.js"></script>
+  <script>
+    __JS_CONTENT__
+  </script>
 </body>
 </html>
 `;

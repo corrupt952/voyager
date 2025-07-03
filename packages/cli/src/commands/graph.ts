@@ -15,6 +15,16 @@ const template = readFileSync(
   'utf-8'
 );
 
+// JavaScriptとCSSファイルを読み込む
+const jsContent = readFileSync(
+  join(__dirname, '../../assets/visualizer.iife.js'),
+  'utf-8'
+);
+const cssContent = readFileSync(
+  join(__dirname, '../../assets/style.css'),
+  'utf-8'
+);
+
 export function createGraphCommand(): Command {
   const command = new Command('graph');
 
@@ -103,11 +113,16 @@ export function createGraphCommand(): Command {
             edges: Array.from(graph.edges),
           });
 
-          // テンプレートにグラフデータを埋め込む
-          const html = template.replace(
+          // テンプレートにグラフデータとアセットを埋め込む
+          let html = template.replace(
             'window.__GRAPH_DATA__ = null',
             `window.__GRAPH_DATA__ = ${graphData}`
           );
+          
+          // JavaScriptとCSSを埋め込む
+          html = html.replace('__JS_CONTENT__', jsContent);
+          html = html.replace('__CSS_CONTENT__', cssContent);
+          
           writeFileSync(absoluteOutputPath, html);
 
           console.log(chalk.green('\n✨ Done! Open the following file in your browser:'));

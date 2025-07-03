@@ -22,26 +22,24 @@ Voyager generates beautiful, interactive dependency diagrams from your Vue.js co
 
 ## Quick Start
 
-> **Note**: Voyager is not yet published to npm. Please build from source for now.
-
 ```bash
-# Clone and build from source
-git clone https://github.com/corrupt952/voyager.git
-cd voyager
-npm install
-npm run build
+# Install Voyager CLI
+npm install -g @voyager-vue/cli
+
+# Or use npx directly
+npx @voyager-vue/cli graph src/
 
 # Run in your Vue.js project
 cd /path/to/your/vue-project
 
 # Generate interactive dependency graph
-npx voyager graph src/
+voyager graph src/
 
 # Show dependencies for a specific file
-npx voyager deps src/ -t components/MyComponent.vue
+voyager deps src/ -t components/MyComponent.vue
 
 # Show project statistics
-npx voyager stats src/
+voyager stats src/
 ```
 
 ## Commands

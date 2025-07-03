@@ -5,8 +5,8 @@
     "rootDir": "src",
     "composite": true,
     "paths": {
-      "@voyager/core": ["../core/dist"],
-      "@voyager/ui": ["../ui/dist"]
+      "@voyager-vue/core": ["../core/dist"],
+      "@voyager-vue/ui": ["../ui/dist"]
     }
   },
   "include": ["src/**/*"],

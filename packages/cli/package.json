@@ -1,5 +1,5 @@
 {
-  "name": "@voyager/cli",
+  "name": "@voyager-vue/cli",
   "version": "0.0.1",
   "description": "Vue component dependency visualization CLI tool",
   "type": "module",
@@ -17,8 +17,8 @@
     "format": "prettier --write src/**/*.ts"
   },
   "dependencies": {
-    "@voyager/core": "workspace:*",
-    "@voyager/ui": "workspace:*",
+    "@voyager-vue/core": "workspace:*",
+    "@voyager-vue/ui": "workspace:*",
     "chalk": "^5.4.1",
     "commander": "^13.1.0",
     "fast-glob": "^3.3.3",

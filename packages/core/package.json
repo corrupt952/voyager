@@ -1,5 +1,5 @@
 {
-  "name": "@voyager/core",
+  "name": "@voyager-vue/core",
   "version": "0.0.1",
   "description": "Vue component dependency analyzer",
   "type": "module",

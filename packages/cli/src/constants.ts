@@ -1,0 +1,16 @@
+export const DEFAULT_IGNORE_PATTERNS = [
+  '**/node_modules/**',
+  '**/dist/**',
+  '**/coverage/**',
+  '**/.git/**',
+  '**/public/**',
+  '**/static/**',
+  '**/*.stories.{js,jsx,ts,tsx,vue}',
+  '**/*.spec.{js,jsx,ts,tsx,vue}',
+  '**/*.test.{js,jsx,ts,tsx,vue}',
+  '**/tests/**',
+  '**/test/**',
+  '**/__tests__/**',
+  '**/stories/**',
+  '**/.storybook/**',
+];

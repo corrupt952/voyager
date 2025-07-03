@@ -77,6 +77,15 @@ voyager deps src/ -t components/Button.vue -d all
 voyager deps src/ -t components/Button.vue --json
 ```
 
+Example output:
+```
+App.vue
+├── imports (2):
+│   ├── ./components/Header.vue
+│   └── ./components/Footer.vue
+└── imported by: none
+```
+
 ### `voyager stats <directory>`
 Display component statistics and analysis.
 

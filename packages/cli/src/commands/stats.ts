@@ -1,6 +1,6 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
-import { collectFiles, DependencyAnalyzer, CollectedFile, DependencyNode } from '@voyager/core';
+import { collectFiles, DependencyAnalyzer, CollectedFile, DependencyNode } from '@voyager-vue/core';
 import { DEFAULT_IGNORE_PATTERNS } from '../constants.js';
 
 interface Stats {

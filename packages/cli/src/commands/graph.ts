@@ -3,7 +3,7 @@ import chalk from 'chalk';
 import { readFileSync, writeFileSync } from 'fs';
 import { join, dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
-import { collectFiles, DependencyAnalyzer, CollectedFile } from '@voyager/core';
+import { collectFiles, DependencyAnalyzer, CollectedFile } from '@voyager-vue/core';
 import { DEFAULT_IGNORE_PATTERNS } from '../constants.js';
 
 const __filename = fileURLToPath(import.meta.url);

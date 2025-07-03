@@ -2,7 +2,7 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import { resolve, basename } from 'path';
 import { existsSync } from 'fs';
-import { collectFiles, DependencyAnalyzer, DependencyNode } from '@voyager/core';
+import { collectFiles, DependencyAnalyzer, DependencyNode } from '@voyager-vue/core';
 import { DEFAULT_IGNORE_PATTERNS } from '../constants.js';
 
 interface DependencyTree {

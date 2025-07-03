@@ -1,4 +1,4 @@
-import { DependencyGraph, DependencyNode, DependencyEdge } from '@voyager/core';
+import { DependencyGraph, DependencyNode, DependencyEdge } from '@voyager-vue/core';
 import { Node, Edge } from '@xyflow/react';
 
 type NodeData = {

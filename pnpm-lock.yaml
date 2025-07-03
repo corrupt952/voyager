@@ -14,10 +14,10 @@ importers:
 
   packages/cli:
     dependencies:
-      '@voyager/core':
+      '@voyager-vue/core':
         specifier: workspace:*
         version: link:../core
-      '@voyager/ui':
+      '@voyager-vue/ui':
         specifier: workspace:*
         version: link:../ui
       chalk:
@@ -103,7 +103,7 @@ importers:
       '@dagrejs/dagre':
         specifier: ^1.1.5
         version: 1.1.5
-      '@voyager/core':
+      '@voyager-vue/core':
         specifier: workspace:*
         version: link:../core
       '@xyflow/react':

@@ -22,14 +22,70 @@ Voyager generates beautiful, interactive dependency diagrams from your Vue.js co
 
 ## Quick Start
 
-Coming soon...
+> **Note**: Voyager is not yet published to npm. Please build from source for now.
 
 ```bash
-# Install Voyager
-npm install @voyager/cli -g
+# Clone and build from source
+git clone https://github.com/corrupt952/voyager.git
+cd voyager
+npm install
+npm run build
 
 # Run in your Vue.js project
-voyager analyze
+cd /path/to/your/vue-project
+
+# Generate interactive dependency graph
+npx voyager graph src/
+
+# Show dependencies for a specific file
+npx voyager deps src/ -t components/MyComponent.vue
+
+# Show project statistics
+npx voyager stats src/
+```
+
+## Commands
+
+### `voyager graph <directory>`
+Generate an interactive HTML dependency graph.
+
+```bash
+# Basic usage
+voyager graph src/
+
+# Custom output file
+voyager graph src/ -o my-graph.html
+
+# With custom ignore patterns
+voyager graph src/ --ignore "**/*.config.js" "**/*.mock.js"
+```
+
+### `voyager deps <directory>`
+Show dependencies for a specific file.
+
+```bash
+# Show direct dependencies only
+voyager deps src/ -t components/Button.vue
+
+# Show dependencies up to depth 3
+voyager deps src/ -t components/Button.vue -d 3
+
+# Show all dependency levels
+voyager deps src/ -t components/Button.vue -d all
+
+# Output as JSON
+voyager deps src/ -t components/Button.vue --json
+```
+
+### `voyager stats <directory>`
+Display component statistics and analysis.
+
+```bash
+# Show statistics
+voyager stats src/
+
+# Output as JSON for CI/CD integration
+voyager stats src/ --json
 ```
 
 ## Roadmap

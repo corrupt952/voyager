@@ -2,8 +2,118 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import { resolve, basename } from 'path';
 import { existsSync } from 'fs';
-import { collectFiles, DependencyAnalyzer } from '@voyager/core';
+import { collectFiles, DependencyAnalyzer, DependencyNode } from '@voyager/core';
 import { DEFAULT_IGNORE_PATTERNS } from '../constants.js';
+
+interface DependencyTree {
+  path: string;
+  relativePath: string;
+  children: DependencyTree[];
+}
+
+function collectDependencies(
+  node: DependencyNode,
+  graph: Map<string, DependencyNode>,
+  direction: 'imports' | 'importedBy',
+  depth: number | null,
+  currentDepth: number = 0,
+  visited: Set<string> = new Set()
+): DependencyTree[] {
+  if (depth !== null && currentDepth >= depth) {
+    return [];
+  }
+
+  const dependencies = direction === 'imports' 
+    ? node.dependencies.imports 
+    : node.dependencies.importedBy;
+
+  const trees: DependencyTree[] = [];
+
+  for (const dep of dependencies) {
+    if (visited.has(dep)) {
+      continue; // 循環参照を避ける
+    }
+
+    if (direction === 'imports') {
+      // importsの場合、相対パスから実際のノードを探す
+      const depNode = Array.from(graph.entries()).find(([_, n]) => 
+        n.relativePath === dep || n.id.endsWith(dep)
+      );
+      
+      if (depNode) {
+        const [depPath, depNodeData] = depNode;
+        visited.add(depPath);
+        
+        const tree: DependencyTree = {
+          path: depPath,
+          relativePath: dep,
+          children: collectDependencies(
+            depNodeData,
+            graph,
+            direction,
+            depth,
+            currentDepth + 1,
+            new Set(visited)
+          )
+        };
+        trees.push(tree);
+      } else {
+        // ノードが見つからない場合（外部依存など）
+        trees.push({
+          path: dep,
+          relativePath: dep,
+          children: []
+        });
+      }
+    } else {
+      // importedByの場合、パスから直接ノードを取得
+      const depNode = graph.get(dep);
+      if (depNode) {
+        visited.add(dep);
+        
+        const tree: DependencyTree = {
+          path: dep,
+          relativePath: depNode.relativePath,
+          children: collectDependencies(
+            depNode,
+            graph,
+            direction,
+            depth,
+            currentDepth + 1,
+            new Set(visited)
+          )
+        };
+        trees.push(tree);
+      }
+    }
+  }
+
+  return trees;
+}
+
+function printDependencyTree(
+  trees: DependencyTree[],
+  prefix: string = '',
+  isLast: boolean = false,
+  currentDepth: number = 0
+): void {
+  trees.forEach((tree, index) => {
+    const isLastItem = index === trees.length - 1;
+    const connector = isLastItem ? '└──' : '├──';
+    const extension = isLastItem ? '    ' : '│   ';
+    
+    console.log(chalk.gray(`${prefix}${connector} ${tree.relativePath}`));
+    
+    if (tree.children.length > 0) {
+      printDependencyTree(
+        tree.children,
+        prefix + extension,
+        isLastItem,
+        currentDepth + 1
+      );
+    }
+  });
+}
 
 export function createDepsCommand(): Command {
   const command = new Command('deps');
@@ -19,6 +129,7 @@ export function createDepsCommand(): Command {
       []
     )
     .option('--json', 'Output as JSON')
+    .option('-d, --depth <number>', 'Depth of dependency tree to show (default: 1, use "all" for unlimited)', '1')
     .action(
       async (
         directory: string,
@@ -27,6 +138,7 @@ export function createDepsCommand(): Command {
           ignore: string[];
           ignoreOnly: string[];
           json?: boolean;
+          depth: string;
         }
       ) => {
         try {
@@ -66,42 +178,48 @@ export function createDepsCommand(): Command {
             process.exit(1);
           }
 
+          // 深さの解析
+          const maxDepth = options.depth === 'all' ? null : parseInt(options.depth, 10);
+          if (options.depth !== 'all' && (isNaN(maxDepth) || maxDepth < 1)) {
+            console.error(chalk.red('Error: Depth must be a positive number or "all"'));
+            process.exit(1);
+          }
+
           if (options.json) {
+            const importTrees = collectDependencies(node, graph.nodes, 'imports', maxDepth);
+            const importedByTrees = collectDependencies(node, graph.nodes, 'importedBy', maxDepth);
+            
             console.log(JSON.stringify({
               file: node.relativePath,
-              imports: node.dependencies.imports,
-              importedBy: node.dependencies.importedBy.map((p) => {
-                const n = graph.nodes.get(p);
-                return n ? n.relativePath : p;
-              }),
+              depth: options.depth,
+              imports: importTrees,
+              importedBy: importedByTrees,
             }, null, 2));
           } else {
             console.log(chalk.blue.bold(`\n${basename(targetPath)}`));
             
             // imports
-            if (node.dependencies.imports.length > 0) {
+            const importTrees = collectDependencies(node, graph.nodes, 'imports', maxDepth);
+            if (importTrees.length > 0) {
               console.log(chalk.green(`├── imports (${node.dependencies.imports.length}):`));
-              node.dependencies.imports.forEach((imp, idx) => {
-                const isLast = idx === node.dependencies.imports.length - 1;
-                const prefix = isLast ? '│   └──' : '│   ├──';
-                console.log(chalk.gray(`${prefix} ${imp}`));
-              });
+              printDependencyTree(importTrees, '│   ');
             } else {
               console.log(chalk.gray('├── imports: none'));
             }
 
             // imported by
-            if (node.dependencies.importedBy.length > 0) {
+            const importedByTrees = collectDependencies(node, graph.nodes, 'importedBy', maxDepth);
+            if (importedByTrees.length > 0) {
               console.log(chalk.yellow(`└── imported by (${node.dependencies.importedBy.length}):`));
-              node.dependencies.importedBy.forEach((path, idx) => {
-                const importerNode = graph.nodes.get(path);
-                const displayPath = importerNode ? importerNode.relativePath : path;
-                const isLast = idx === node.dependencies.importedBy.length - 1;
-                const prefix = isLast ? '    └──' : '    ├──';
-                console.log(chalk.gray(`${prefix} ${displayPath}`));
-              });
+              printDependencyTree(importedByTrees, '    ');
             } else {
               console.log(chalk.gray('└── imported by: none'));
+            }
+            
+            if (maxDepth && maxDepth > 1) {
+              console.log(chalk.gray(`\n(Showing dependencies up to depth ${maxDepth})`));
+            } else if (options.depth === 'all') {
+              console.log(chalk.gray('\n(Showing all dependency levels)'));
             }
           }
         } catch (error) {

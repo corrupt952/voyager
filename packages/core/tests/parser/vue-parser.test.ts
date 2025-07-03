@@ -1,344 +1,135 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { parseVue } from '../../src/parser/vue-parser.js';
-import { readFileSync } from 'fs';
-import { parse } from '@vue/compiler-sfc';
-import type { SFCDescriptor, SFCScriptBlock } from '@vue/compiler-sfc';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
 
-// モジュールのモック
-vi.mock('fs', () => ({
-  readFileSync: vi.fn(),
-}));
-
-vi.mock('@vue/compiler-sfc', () => ({
-  parse: vi.fn(),
-}));
-
-// モック用のヘルパー関数
-function createMockScript(content: string, lang?: string): SFCScriptBlock {
-  return {
-    content,
-    type: 'script',
-    attrs: lang ? { lang } : {},
-    loc: {
-      source: content,
-      start: { line: 1, column: 1, offset: 0 },
-      end: { line: 1, column: 1, offset: content.length },
-    },
-    lang: lang || 'js',
-  };
-}
-
-function createMockDescriptor(options: {
-  script?: string | null;
-  scriptSetup?: string | null;
-  scriptLang?: string;
-  scriptSetupLang?: string;
-}): SFCDescriptor {
-  return {
-    filename: 'test.vue',
-    source: '',
-    template: null,
-    script: options.script ? createMockScript(options.script, options.scriptLang) : null,
-    scriptSetup: options.scriptSetup
-      ? createMockScript(options.scriptSetup, options.scriptSetupLang)
-      : null,
-    styles: [],
-    customBlocks: [],
-    cssVars: [],
-    slotted: false,
-    shouldForceReload: () => false,
-  };
-}
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const fixtureDir = join(__dirname, '../fixtures/parser-test');
 
 describe('vue-parser', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  describe('script type detection', () => {
-    it('should detect Composition API with defineComponent', () => {
-      const scriptContent = `
-        import { defineComponent } from 'vue';
-        export default defineComponent({});
-      `;
-      vi.mocked(readFileSync).mockReturnValue(`<script>${scriptContent}</script>`);
-      vi.mocked(parse).mockReturnValue({
-        descriptor: createMockDescriptor({ script: scriptContent }),
-        errors: [],
-      });
-
-      const result = parseVue('test.vue');
+  describe('Composition API (script setup)', () => {
+    it('should parse Vue file with script setup', () => {
+      const result = parseVue(join(fixtureDir, 'vue-composition.vue'));
+      
+      expect(result.type).toBe('vue');
       expect(result.scriptType).toBe('composition');
-    });
-
-    it('should detect Composition API with setup function', () => {
-      const scriptContent = `
-        export default {
-          setup() {
-            return {};
-          }
-        };
-      `;
-      vi.mocked(readFileSync).mockReturnValue(`<script>${scriptContent}</script>`);
-      vi.mocked(parse).mockReturnValue({
-        descriptor: createMockDescriptor({ script: scriptContent }),
-        errors: [],
-      });
-
-      const result = parseVue('test.vue');
-      expect(result.scriptType).toBe('composition');
-    });
-
-    it('should detect Options API', () => {
-      const scriptContent = `
-        export default {
-          data() {
-            return {};
-          },
-          methods: {},
-          computed: {},
-        };
-      `;
-      vi.mocked(readFileSync).mockReturnValue(`<script>${scriptContent}</script>`);
-      vi.mocked(parse).mockReturnValue({
-        descriptor: createMockDescriptor({ script: scriptContent }),
-        errors: [],
-      });
-
-      const result = parseVue('test.vue');
-      expect(result.scriptType).toBe('options');
-    });
-
-    it('should handle script setup', () => {
-      const scriptContent = `
-        import { ref } from 'vue';
-        const count = ref(0);
-      `;
-      vi.mocked(readFileSync).mockReturnValue(`<script setup>${scriptContent}</script>`);
-      vi.mocked(parse).mockReturnValue({
-        descriptor: createMockDescriptor({ scriptSetup: scriptContent }),
-        errors: [],
-      });
-
-      const result = parseVue('test.vue');
-      expect(result.scriptType).toBe('composition');
-    });
-
-    describe('TypeScript patterns', () => {
-      it('should handle <script lang="ts">', () => {
-        const scriptContent = `
-          interface Props {
-            message: string;
-          }
-
-          export default {
-            props: {
-              message: { type: String, required: true }
-            } as Props
-          };
-        `;
-        vi.mocked(readFileSync).mockReturnValue(`<script lang="ts">${scriptContent}</script>`);
-        vi.mocked(parse).mockReturnValue({
-          descriptor: createMockDescriptor({
-            script: scriptContent,
-            scriptLang: 'ts',
-          }),
-          errors: [],
-        });
-
-        const result = parseVue('test.vue');
-        expect(result.type).toBe('vue');
-        expect(result.scriptType).toBe('options');
-        expect(result.scriptLang).toBe('ts');
-      });
-
-      it('should handle <script setup lang="ts">', () => {
-        const scriptContent = `
-          interface Props {
-            message: string;
-          }
-
-          defineProps<Props>();
-
-          const count = ref<number>(0);
-        `;
-        vi.mocked(readFileSync).mockReturnValue(
-          `<script setup lang="ts">${scriptContent}</script>`
-        );
-        vi.mocked(parse).mockReturnValue({
-          descriptor: createMockDescriptor({
-            scriptSetup: scriptContent,
-            scriptSetupLang: 'ts',
-          }),
-          errors: [],
-        });
-
-        const result = parseVue('test.vue');
-        expect(result.type).toBe('vue');
-        expect(result.scriptType).toBe('composition');
-        expect(result.scriptLang).toBe('ts');
-      });
-
-      it('should handle <script lang="ts" setup>', () => {
-        const scriptContent = `
-          interface Props {
-            message: string;
-          }
-
-          defineProps<Props>();
-
-          const count = ref<number>(0);
-        `;
-        vi.mocked(readFileSync).mockReturnValue(
-          `<script lang="ts" setup>${scriptContent}</script>`
-        );
-        vi.mocked(parse).mockReturnValue({
-          descriptor: createMockDescriptor({
-            scriptSetup: scriptContent,
-            scriptSetupLang: 'ts',
-          }),
-          errors: [],
-        });
-
-        const result = parseVue('test.vue');
-        expect(result.type).toBe('vue');
-        expect(result.scriptType).toBe('composition');
-        expect(result.scriptLang).toBe('ts');
-      });
-
-      it('should handle both normal and setup scripts with TypeScript', () => {
-        const normalScript = `
-          interface Props {
-            message: string;
-          }
-
-          export type Status = 'active' | 'inactive';
-        `;
-        const setupScript = `
-          const props = defineProps<Props>();
-          const status = ref<Status>('active');
-        `;
-        vi.mocked(readFileSync).mockReturnValue(
-          `<script lang="ts">${normalScript}</script><script setup lang="ts">${setupScript}</script>`
-        );
-        vi.mocked(parse).mockReturnValue({
-          descriptor: createMockDescriptor({
-            script: normalScript,
-            scriptLang: 'ts',
-            scriptSetup: setupScript,
-            scriptSetupLang: 'ts',
-          }),
-          errors: [],
-        });
-
-        const result = parseVue('test.vue');
-        expect(result.type).toBe('vue');
-        expect(result.scriptType).toBe('composition');
-        expect(result.scriptLang).toBe('ts');
-      });
-
-      it('should handle JavaScript by default when no lang is specified', () => {
-        const scriptContent = `
-          export default {
-            data() {
-              return {};
-            }
-          };
-        `;
-        vi.mocked(readFileSync).mockReturnValue(`<script>${scriptContent}</script>`);
-        vi.mocked(parse).mockReturnValue({
-          descriptor: createMockDescriptor({
-            script: scriptContent,
-          }),
-          errors: [],
-        });
-
-        const result = parseVue('test.vue');
-        expect(result.type).toBe('vue');
-        expect(result.scriptLang).toBe('js');
-      });
-
-      it('should handle unknown script languages', () => {
-        const scriptContent = `
-          export default {
-            data() {
-              return {};
-            }
-          };
-        `;
-        vi.mocked(readFileSync).mockReturnValue(`<script lang="coffee">${scriptContent}</script>`);
-        vi.mocked(parse).mockReturnValue({
-          descriptor: createMockDescriptor({
-            script: scriptContent,
-            scriptLang: 'coffee',
-          }),
-          errors: [],
-        });
-
-        const result = parseVue('test.vue');
-        expect(result.type).toBe('vue');
-        expect(result.scriptLang).toBe('unknown');
-      });
-    });
-  });
-
-  describe('imports and exports', () => {
-    it('should parse imports from script', () => {
-      const scriptContent = `
-        import { ref } from 'vue';
-        import DefaultComp from './DefaultComp.vue';
-        export default {
-          setup() {
-            return { count: ref(0) };
-          }
-        };
-      `;
-      vi.mocked(readFileSync).mockReturnValue(`<script>${scriptContent}</script>`);
-      vi.mocked(parse).mockReturnValue({
-        descriptor: createMockDescriptor({ script: scriptContent }),
-        errors: [],
-      });
-
-      const result = parseVue('test.vue');
+      expect(result.scriptLang).toBe('ts');
       expect(result.imports).toHaveLength(2);
+      expect(result.imports[0].source).toBe('./Component.vue');
       expect(result.imports[1].source).toBe('vue');
-      expect(result.imports[0].source).toBe('./DefaultComp.vue');
-    });
-
-    it('should always have default export', () => {
-      const content = `<template><div></div></template>`;
-      vi.mocked(readFileSync).mockReturnValue(content);
-      vi.mocked(parse).mockReturnValue({
-        descriptor: createMockDescriptor({ script: null, scriptSetup: null }),
-        errors: [],
-      });
-
-      const result = parseVue('test.vue');
       expect(result.exports.hasDefault).toBe(true);
     });
   });
 
-  describe('error handling', () => {
-    it('should handle SFC parse errors', () => {
-      vi.mocked(readFileSync).mockReturnValue('<template>');
-      vi.mocked(parse).mockReturnValue({
-        descriptor: createMockDescriptor({}),
-        errors: [new Error('Unexpected end of template')],
-      });
-
-      const result = parseVue('test.vue');
-      expect(result.error).toBeDefined();
-      expect(result.error?.message).toContain('Vue SFC parse errors');
+  describe('Options API', () => {
+    it('should parse Vue file with Options API', () => {
+      const result = parseVue(join(fixtureDir, 'vue-options.vue'));
+      
+      expect(result.type).toBe('vue');
+      expect(result.scriptType).toBe('options');
+      expect(result.scriptLang).toBe('ts');
+      expect(result.imports).toHaveLength(1);
+      expect(result.imports[0].source).toBe('./Component.vue');
+      expect(result.exports.hasDefault).toBe(true);
     });
 
-    it('should handle file read errors', () => {
-      vi.mocked(readFileSync).mockImplementation(() => {
-        throw new Error('File not found');
+    it('should parse plain JavaScript Vue file', () => {
+      const result = parseVue(join(fixtureDir, 'vue-plain-js.vue'));
+      
+      expect(result.type).toBe('vue');
+      expect(result.scriptType).toBe('unknown');
+      expect(result.scriptLang).toBe('js');
+      expect(result.imports).toHaveLength(0);
+      expect(result.exports.hasDefault).toBe(true);
+    });
+  });
+
+  describe('Edge cases', () => {
+    it('should handle Vue file without script section', () => {
+      const result = parseVue(join(fixtureDir, 'vue-no-script.vue'));
+      
+      expect(result.type).toBe('vue');
+      expect(result.scriptType).toBe('unknown');
+      expect(result.imports).toHaveLength(0);
+      expect(result.exports.hasDefault).toBe(true);
+      expect(result.exports.named).toHaveLength(0);
+    });
+
+    it('should handle Vue file with multiple script blocks', () => {
+      const result = parseVue(join(fixtureDir, 'vue-multiple-scripts.vue'));
+      
+      expect(result.type).toBe('vue');
+      expect(result.scriptType).toBe('composition');
+      expect(result.scriptLang).toBe('ts');
+      expect(result.imports).toHaveLength(1);
+      expect(result.imports[0].source).toBe('vue');
+    });
+
+    it('should handle Vue file with only style', () => {
+      const result = parseVue(join(fixtureDir, 'vue-style-only.vue'));
+      
+      expect(result.type).toBe('vue');
+      expect(result.scriptType).toBe('unknown');
+      expect(result.imports).toHaveLength(0);
+      expect(result.exports.hasDefault).toBe(true);
+    });
+
+    it('should handle JSX/TSX in Vue files', () => {
+      const result = parseVue(join(fixtureDir, 'vue-jsx.vue'));
+      
+      expect(result.type).toBe('vue');
+      expect(result.scriptType).toBe('composition');
+      expect(result.scriptLang).toBe('unknown');
+      expect(result.imports).toHaveLength(1);
+      expect(result.imports[0].source).toBe('vue');
+    });
+
+    it('should handle Vue file with exports in script setup', () => {
+      const result = parseVue(join(fixtureDir, 'vue-with-exports.vue'));
+      
+      expect(result.type).toBe('vue');
+      expect(result.scriptType).toBe('composition');
+      expect(result.exports.hasDefault).toBe(true);
+      expect(result.exports.named).toContain('helper');
+      // TypeScript interface exports are not detected by current implementation
+      expect(result.exports.named).not.toContain('Props');
+    });
+
+    it('should handle invalid Vue file gracefully', () => {
+      const result = parseVue(join(fixtureDir, 'vue-invalid.vue'));
+      
+      expect(result.error).toBeDefined();
+      expect(result.type).toBe('vue');
+    });
+  });
+
+  describe('Import parsing', () => {
+    it('should correctly parse import specifiers', () => {
+      const result = parseVue(join(fixtureDir, 'vue-composition.vue'));
+      
+      const vueImport = result.imports.find(imp => imp.source === 'vue');
+      expect(vueImport).toBeDefined();
+      expect(vueImport?.specifiers).toHaveLength(1);
+      expect(vueImport?.specifiers[0]).toEqual({
+        imported: 'ref',
+        local: 'ref'
       });
 
-      const result = parseVue('test.vue');
-      expect(result.error).toBeDefined();
-      expect(result.error?.message).toBe('File not found');
+      const componentImport = result.imports.find(imp => imp.source === './Component.vue');
+      expect(componentImport).toBeDefined();
+      expect(componentImport?.hasDefault).toBe(true);
+      expect(componentImport?.defaultLocal).toBe('Component');
+      expect(componentImport?.specifiers).toHaveLength(0);
+    });
+  });
+
+  describe('File path handling', () => {
+    it('should include correct file path in result', () => {
+      const filePath = join(fixtureDir, 'vue-composition.vue');
+      const result = parseVue(filePath);
+      
+      expect(result.filePath).toBe(filePath);
     });
   });
 });

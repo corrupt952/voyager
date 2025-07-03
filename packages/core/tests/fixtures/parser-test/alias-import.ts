@@ -1,0 +1,1 @@
+import { name1 as alias1, name2 as alias2 } from 'module-name';

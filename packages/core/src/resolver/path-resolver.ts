@@ -6,31 +6,31 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 /**
- * パス解決のオプション
+ * Path resolver options
  */
 export interface PathResolverOptions {
-  /** プロジェクトのルートディレクトリ */
+  /** Project root directory */
   rootDir: string;
-  /** TypeScriptのベースURL */
+  /** TypeScript base URL */
   baseUrl?: string;
-  /** TypeScriptのパスエイリアス */
+  /** TypeScript path aliases */
   paths?: Record<string, string[]>;
-  /** node_modulesの検索を行うかどうか */
+  /** Whether to resolve node_modules */
   resolveNodeModules?: boolean;
 }
 
 /**
- * パス解決の結果
+ * Path resolution result
  */
 export interface ResolveResult {
-  /** 解決されたパス */
+  /** Resolved path */
   resolvedPath: string | null;
-  /** エラーメッセージ */
+  /** Error message */
   error?: string;
 }
 
 /**
- * パスリゾルバークラス
+ * Path resolver class
  */
 export class PathResolver {
   private readonly rootDir: string;
@@ -47,21 +47,21 @@ export class PathResolver {
   }
 
   /**
-   * インポートパスを解決する
+   * Resolve import path
    */
   resolve(importPath: string, fromFile: string): ResolveResult {
     try {
-      // 1. バリデーション
+      // 1. Validation
       if (!this.isValidImportPath(importPath)) {
-        return { resolvedPath: null, error: '無効なパスです' };
+        return { resolvedPath: null, error: 'Invalid path' };
       }
 
-      // 2. 絶対パスの処理
+      // 2. Handle absolute paths
       if (isAbsolute(importPath)) {
         return this.resolveWithExtension(importPath);
       }
 
-      // 3. エイリアスパスの解決
+      // 3. Resolve alias paths
       if (importPath.startsWith('@') || importPath.startsWith('#')) {
         const aliasResult = this.resolveAliasPath(importPath);
         if (aliasResult.resolvedPath) {
@@ -69,10 +69,10 @@ export class PathResolver {
         }
       }
 
-      // 4. node_modulesの解決判定
+      // 4. Determine node_modules resolution
       if (!importPath.startsWith('.')) {
         if (!this.resolveNodeModules) {
-          return { resolvedPath: null, error: 'node_modulesの解決が無効です' };
+          return { resolvedPath: null, error: 'node_modules resolution is disabled' };
         }
         const moduleResult = this.resolveNodeModule(importPath, fromFile);
         if (moduleResult.resolvedPath) {
@@ -80,35 +80,35 @@ export class PathResolver {
         }
       }
 
-      // 5. 相対パスの解決（非エイリアスパスも含む）
+      // 5. Resolve relative paths (including non-alias paths)
       return this.resolveRelativePath(importPath, fromFile);
     } catch (error) {
       return {
         resolvedPath: null,
-        error: error instanceof Error ? error.message : '不明なエラーが発生しました',
+        error: error instanceof Error ? error.message : 'Unknown error occurred',
       };
     }
   }
 
   /**
-   * インポートパスが有効かどうかを判定する
+   * Check if import path is valid
    */
   private isValidImportPath(importPath: string): boolean {
     return importPath !== '' && typeof importPath === 'string';
   }
 
   /**
-   * node_modulesからパスを解決する
+   * Resolve path from node_modules
    */
   private resolveNodeModule(importPath: string, fromFile: string): ResolveResult {
-    // プロジェクトルートのnode_modulesを優先的に確認
+    // Check project root node_modules first
     const rootNodeModulesPath = join(this.rootDir, 'node_modules', importPath);
     const rootResult = this.resolveWithExtension(rootNodeModulesPath);
     if (rootResult.resolvedPath) {
       return rootResult;
     }
 
-    // 親ディレクトリのnode_modulesを順に確認
+    // Check parent directories' node_modules
     let dir = dirname(fromFile);
     while (dir !== this.rootDir && dir !== '/' && dir !== '.') {
       const nodeModulesPath = join(dir, 'node_modules', importPath);
@@ -119,11 +119,11 @@ export class PathResolver {
       dir = dirname(dir);
     }
 
-    return { resolvedPath: null, error: `モジュールが見つかりません: ${importPath}` };
+    return { resolvedPath: null, error: `Module not found: ${importPath}` };
   }
 
   /**
-   * エイリアスパスを解決する
+   * Resolve alias path
    */
   private resolveAliasPath(importPath: string): ResolveResult {
     for (const [alias, targets] of Object.entries(this.paths)) {
@@ -139,33 +139,33 @@ export class PathResolver {
         }
       }
     }
-    return { resolvedPath: null, error: `エイリアスパスを解決できません: ${importPath}` };
+    return { resolvedPath: null, error: `Cannot resolve alias path: ${importPath}` };
   }
 
   /**
-   * 相対パスを解決する
+   * Resolve relative path
    */
   private resolveRelativePath(importPath: string, fromFile: string): ResolveResult {
-    // 相対パスの場合は、fromFileからの相対パスとして解決
+    // For relative paths, resolve from the directory of fromFile
     if (importPath.startsWith('.')) {
       const baseDir = dirname(fromFile);
       const absolutePath = resolve(baseDir, importPath);
       return this.resolveWithExtension(absolutePath);
     }
 
-    // 非相対パスの場合は、baseUrlからの相対パスとして解決
+    // For non-relative paths, resolve from baseUrl
     const absolutePath = resolve(this.baseUrl, importPath);
     return this.resolveWithExtension(absolutePath);
   }
 
   /**
-   * パスに拡張子を付与して解決する
+   * Resolve path with extension
    */
   private resolveWithExtension(basePath: string): ResolveResult {
-    // 1. 完全なパスでの確認
+    // 1. Check complete path
     if (existsSync(basePath)) {
       if (statSync(basePath).isDirectory()) {
-        // ディレクトリの場合はindex.*を検索
+        // For directories, search for index.*
         for (const ext of this.extensions) {
           const indexPath = join(basePath, 'index' + ext);
           if (existsSync(indexPath)) {
@@ -177,7 +177,7 @@ export class PathResolver {
       }
     }
 
-    // 2. 拡張子を付けて確認
+    // 2. Check with extensions
     for (const ext of this.extensions) {
       const pathWithExt = basePath + ext;
       if (existsSync(pathWithExt)) {
@@ -185,7 +185,7 @@ export class PathResolver {
       }
     }
 
-    // 3. ディレクトリとして確認し、index.*を検索
+    // 3. Check as directory and search for index.*
     const dirPath = basePath;
     if (existsSync(dirPath) && statSync(dirPath).isDirectory()) {
       for (const ext of this.extensions) {
@@ -196,7 +196,7 @@ export class PathResolver {
       }
     }
 
-    // 4. package.jsonの確認（node_modulesの場合）
+    // 4. Check package.json (for node_modules)
     if (basePath.includes('node_modules')) {
       const pkgPath = join(basePath, 'package.json');
       if (existsSync(pkgPath)) {
@@ -209,11 +209,11 @@ export class PathResolver {
             }
           }
         } catch {
-          // package.jsonの読み込みエラーは無視
+          // Ignore package.json read errors
         }
       }
     }
 
-    return { resolvedPath: null, error: `ファイルが存在しません: ${basePath}` };
+    return { resolvedPath: null, error: `File does not exist: ${basePath}` };
   }
 }

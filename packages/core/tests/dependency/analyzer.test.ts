@@ -1,27 +1,18 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { DependencyAnalyzer } from '../../src/dependency/analyzer.js';
-import { parseFile } from '../../src/parser/index.js';
-import { existsSync } from 'fs';
-import type { PathLike } from 'fs';
-import type { ParseResult } from '../../src/parser/types.js';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
 
-// モジュールのモック
-vi.mock('../../src/parser/index.js');
-vi.mock('fs', () => ({
-  existsSync: vi.fn(),
-  statSync: vi.fn(() => ({
-    isDirectory: () => false,
-  })),
-}));
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 describe('DependencyAnalyzer', () => {
-  const rootDir = '/project';
+  const fixtureDir = join(__dirname, '../fixtures/test-project');
   let analyzer: DependencyAnalyzer;
 
   beforeEach(() => {
-    vi.clearAllMocks();
     analyzer = new DependencyAnalyzer({
-      rootDir,
+      rootDir: fixtureDir,
       baseUrl: 'src',
       paths: {
         '@/*': ['src/*'],
@@ -29,157 +20,131 @@ describe('DependencyAnalyzer', () => {
     });
   });
 
-  describe('依存関係の解析', () => {
-    it('複数のVueファイルの依存関係を解析できる', () => {
-      // ファイルの存在チェックのモック
-      vi.mocked(existsSync).mockImplementation((path: PathLike) => {
-        return [
-          '/project/src/App.vue',
-          '/project/src/components/Header.vue',
-          '/project/src/components/Footer.vue',
-        ].includes(path.toString());
-      });
+  describe('Dependency analysis', () => {
+    it('should analyze dependencies of multiple Vue files', () => {
+      const files = [
+        join(fixtureDir, 'src/App.vue'),
+        join(fixtureDir, 'src/components/Header.vue'),
+        join(fixtureDir, 'src/components/Footer.vue'),
+      ];
 
-      // パース結果のモック
-      const mockFiles: Record<string, ParseResult> = {
-        '/project/src/App.vue': {
-          type: 'vue',
-          filePath: '/project/src/App.vue',
-          scriptType: 'composition',
-          scriptLang: 'ts',
-          imports: [
-            { source: './components/Header.vue', specifiers: [] },
-            { source: './components/Footer.vue', specifiers: [] },
-          ],
-          exports: { hasDefault: true, named: [] },
-        },
-        '/project/src/components/Header.vue': {
-          type: 'vue',
-          filePath: '/project/src/components/Header.vue',
-          scriptType: 'composition',
-          scriptLang: 'ts',
-          imports: [],
-          exports: { hasDefault: true, named: [] },
-        },
-        '/project/src/components/Footer.vue': {
-          type: 'vue',
-          filePath: '/project/src/components/Footer.vue',
-          scriptType: 'composition',
-          scriptLang: 'ts',
-          imports: [],
-          exports: { hasDefault: true, named: [] },
-        },
-      };
-
-      vi.mocked(parseFile).mockImplementation((path: string) => mockFiles[path]);
-
-      // 解析の実行
-      analyzer.analyze([
-        '/project/src/App.vue',
-        '/project/src/components/Header.vue',
-        '/project/src/components/Footer.vue',
-      ]);
-
+      analyzer.analyze(files);
       const graph = analyzer.getGraph();
 
-      // ノードの検証
+      // Verify nodes
       expect(graph.nodes.size).toBe(3);
-      expect(graph.nodes.get('/project/src/App.vue')).toBeDefined();
-      expect(graph.nodes.get('/project/src/components/Header.vue')).toBeDefined();
-      expect(graph.nodes.get('/project/src/components/Footer.vue')).toBeDefined();
+      expect(graph.nodes.get(files[0])).toBeDefined();
+      expect(graph.nodes.get(files[1])).toBeDefined();
+      expect(graph.nodes.get(files[2])).toBeDefined();
 
-      // エッジの検証
+      // Verify App.vue node details
+      const appNode = graph.nodes.get(files[0]);
+      expect(appNode).toBeDefined();
+      if (appNode) {
+        expect(appNode.type).toBe('vue');
+        expect(appNode.scriptType).toBe('composition');
+        expect(appNode.scriptLang).toBe('ts');
+        expect(appNode.dependencies.imports).toHaveLength(2);
+        expect(appNode.dependencies.imports).toContain('./components/Header.vue');
+        expect(appNode.dependencies.imports).toContain('./components/Footer.vue');
+      }
+
+      // Verify edges
       expect(graph.edges.size).toBe(2);
       const edges = Array.from(graph.edges);
       expect(edges).toContainEqual({
-        from: '/project/src/App.vue',
-        to: '/project/src/components/Header.vue',
+        from: files[0],
+        to: files[1],
         type: 'import',
       });
       expect(edges).toContainEqual({
-        from: '/project/src/App.vue',
-        to: '/project/src/components/Footer.vue',
+        from: files[0],
+        to: files[2],
         type: 'import',
       });
+
+      // Verify reverse dependencies
+      const headerNode = graph.nodes.get(files[1]);
+      const footerNode = graph.nodes.get(files[2]);
+      expect(headerNode?.dependencies.importedBy).toContain(files[0]);
+      expect(footerNode?.dependencies.importedBy).toContain(files[0]);
     });
 
-    it('エイリアスパスを解決できる', () => {
-      vi.mocked(existsSync).mockImplementation((path: PathLike) => {
-        return ['/project/src/App.vue', '/project/src/components/Button.vue'].includes(
-          path.toString()
-        );
-      });
+    it('should resolve alias paths', () => {
+      // Component that uses alias import
+      const componentWithAlias = join(fixtureDir, 'src/components/TestAlias.vue');
+      const targetComponent = join(fixtureDir, 'src/components/Button.vue');
 
-      const mockFiles: Record<string, ParseResult> = {
-        '/project/src/App.vue': {
-          type: 'vue',
-          filePath: '/project/src/App.vue',
-          scriptType: 'composition',
-          scriptLang: 'ts',
-          imports: [{ source: '@/components/Button.vue', specifiers: [] }],
-          exports: { hasDefault: true, named: [] },
-        },
-        '/project/src/components/Button.vue': {
-          type: 'vue',
-          filePath: '/project/src/components/Button.vue',
-          scriptType: 'composition',
-          scriptLang: 'ts',
-          imports: [],
-          exports: { hasDefault: true, named: [] },
-        },
-      };
-
-      vi.mocked(parseFile).mockImplementation((path: string) => mockFiles[path]);
-
-      analyzer.analyze(['/project/src/App.vue', '/project/src/components/Button.vue']);
-
+      analyzer.analyze([componentWithAlias, targetComponent]);
       const graph = analyzer.getGraph();
 
       expect(graph.nodes.size).toBe(2);
       expect(graph.edges.size).toBe(1);
       const edge = Array.from(graph.edges)[0];
       expect(edge).toEqual({
-        from: '/project/src/App.vue',
-        to: '/project/src/components/Button.vue',
+        from: componentWithAlias,
+        to: targetComponent,
         type: 'import',
       });
     });
 
-    it('存在しないファイルは無視する', () => {
-      vi.mocked(existsSync).mockReturnValue(false);
-      vi.mocked(parseFile).mockReturnValue({
-        type: 'vue',
-        filePath: '/project/src/App.vue',
-        scriptType: 'composition',
-        scriptLang: 'ts',
-        imports: [{ source: './NotFound.vue', specifiers: [] }],
-        exports: { hasDefault: true, named: [] },
-      });
+    it('should ignore non-existent files', () => {
+      const files = [
+        join(fixtureDir, 'src/App.vue'),
+        join(fixtureDir, 'src/NotExist.vue'), // Non-existent file
+        join(fixtureDir, 'src/components/Header.vue'),
+      ];
 
-      analyzer.analyze(['/project/src/App.vue']);
+      analyzer.analyze(files);
       const graph = analyzer.getGraph();
 
-      expect(graph.nodes.size).toBe(1);
-      expect(graph.edges.size).toBe(0);
+      // Only existing files should be included as nodes
+      expect(graph.nodes.size).toBe(2);
+      expect(graph.nodes.has(files[0])).toBe(true);
+      expect(graph.nodes.has(files[1])).toBe(false);
+      expect(graph.nodes.has(files[2])).toBe(true);
     });
 
-    it('解析エラーのあるファイルは無視する', () => {
-      vi.mocked(existsSync).mockReturnValue(true);
-      vi.mocked(parseFile).mockReturnValue({
-        type: 'vue',
-        filePath: '/project/src/App.vue',
-        scriptType: 'unknown',
-        scriptLang: 'unknown',
-        imports: [],
-        exports: { hasDefault: false, named: [] },
-        error: new Error('解析エラー'),
-      });
+    it('should ignore files with parsing errors', () => {
+      // Test with invalid Vue file
+      const invalidFile = join(fixtureDir, 'src/invalid.vue');
+      const validFile = join(fixtureDir, 'src/App.vue');
 
-      analyzer.analyze(['/project/src/App.vue']);
+      analyzer.analyze([invalidFile, validFile]);
       const graph = analyzer.getGraph();
 
-      expect(graph.nodes.size).toBe(0);
-      expect(graph.edges.size).toBe(0);
+      // Only valid files should be included
+      expect(graph.nodes.has(validFile)).toBe(true);
+      expect(graph.nodes.has(invalidFile)).toBe(false);
+    });
+  });
+
+  describe('Graph structure validation', () => {
+    it('should set relative paths correctly', () => {
+      const file = join(fixtureDir, 'src/App.vue');
+      analyzer.analyze([file]);
+      
+      const graph = analyzer.getGraph();
+      const node = graph.nodes.get(file);
+      expect(node?.relativePath).toBe('src/App.vue');
+    });
+
+    it('should build bidirectional dependencies', () => {
+      const files = [
+        join(fixtureDir, 'src/App.vue'),
+        join(fixtureDir, 'src/components/Header.vue'),
+      ];
+
+      analyzer.analyze(files);
+      const graph = analyzer.getGraph();
+
+      const appNode = graph.nodes.get(files[0]);
+      const headerNode = graph.nodes.get(files[1]);
+
+      // App.vue imports Header.vue
+      expect(appNode?.dependencies.imports).toContain('./components/Header.vue');
+      // Header.vue is imported by App.vue
+      expect(headerNode?.dependencies.importedBy).toContain(files[0]);
     });
   });
 });

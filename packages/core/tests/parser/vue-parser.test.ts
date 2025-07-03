@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { parseVue } from '../vue-parser.js';
+import { parseVue } from '../../src/parser/vue-parser.js';
 import { readFileSync } from 'fs';
 import { parse } from '@vue/compiler-sfc';
 import type { SFCDescriptor, SFCScriptBlock } from '@vue/compiler-sfc';

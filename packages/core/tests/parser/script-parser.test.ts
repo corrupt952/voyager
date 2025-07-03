@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { parseScript } from '../script-parser.js';
+import { parseScript } from '../../src/parser/script-parser.js';
 import { readFileSync } from 'fs';
 
 // fsモジュールのモック

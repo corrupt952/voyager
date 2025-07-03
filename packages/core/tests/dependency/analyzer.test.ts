@@ -1,13 +1,18 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { DependencyAnalyzer } from '../analyzer.js';
-import { parseFile } from '../../parser/index.js';
+import { DependencyAnalyzer } from '../../src/dependency/analyzer.js';
+import { parseFile } from '../../src/parser/index.js';
 import { existsSync } from 'fs';
 import type { PathLike } from 'fs';
-import type { ParseResult } from '../../parser/types.js';
+import type { ParseResult } from '../../src/parser/types.js';
 
 // モジュールのモック
-vi.mock('../../parser/index.js');
-vi.mock('fs');
+vi.mock('../../src/parser/index.js');
+vi.mock('fs', () => ({
+  existsSync: vi.fn(),
+  statSync: vi.fn(() => ({
+    isDirectory: () => false,
+  })),
+}));
 
 describe('DependencyAnalyzer', () => {
   const rootDir = '/project';

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { PathResolver } from '../path-resolver.js';
+import { PathResolver } from '../../src/resolver/path-resolver.js';
 import { existsSync, readFileSync } from 'fs';
 import { resolve } from 'path';
 import type { PathLike, PathOrFileDescriptor } from 'fs';
@@ -8,6 +8,9 @@ import type { PathLike, PathOrFileDescriptor } from 'fs';
 vi.mock('fs', () => ({
   existsSync: vi.fn(),
   readFileSync: vi.fn(),
+  statSync: vi.fn(() => ({
+    isDirectory: () => false,
+  })),
 }));
 
 describe('PathResolver', () => {

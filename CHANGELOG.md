@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.6] - 2025-07-03
+
+### Added
+- Tree view mode to component selector sidebar with collapsible folders
+- Toggle buttons to switch between flat and tree view modes
+- Folder hierarchy visualization based on file paths
+
 ## [0.0.5] - 2025-07-03
 
 ### Changed

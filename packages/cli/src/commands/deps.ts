@@ -180,7 +180,7 @@ export function createDepsCommand(): Command {
 
           // 深さの解析
           const maxDepth = options.depth === 'all' ? null : parseInt(options.depth, 10);
-          if (options.depth !== 'all' && (isNaN(maxDepth) || maxDepth < 1)) {
+          if (options.depth !== 'all' && maxDepth !== null && (isNaN(maxDepth) || maxDepth < 1)) {
             console.error(chalk.red('Error: Depth must be a positive number or "all"'));
             process.exit(1);
           }

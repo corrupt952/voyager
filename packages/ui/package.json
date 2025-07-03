@@ -13,6 +13,9 @@
     },
     "./template": "./dist/template.html"
   },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "vite build && vite build --config vite.visualizer.config.ts",
     "dev": "vite",

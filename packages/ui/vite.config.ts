@@ -46,6 +46,7 @@ export default defineConfig({
     dts({
       include: ['src/**/*'],
       exclude: ['**/*.test.ts', '**/*.test.tsx'],
+      skipDiagnostics: true,
     }),
     generateTemplate(),
   ],

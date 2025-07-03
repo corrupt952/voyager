@@ -218,67 +218,69 @@ const calculateNodeWeights = (
   return weights;
 };
 
-// Calculate node levels based on dependency relationships
-const calculateNodeLevels = (nodes: any[], edges: any[]): Map<string, number> => {
+// Calculate node levels with focus node at center, dependencies on left, dependents on right
+const calculateDirectionalLevels = (nodes: any[], edges: any[], focusNodeId: string): Map<string, number> => {
   const levels = new Map<string, number>();
-  const incomingEdges = new Map<string, Set<string>>();
-  const outgoingEdges = new Map<string, Set<string>>();
   
-  // Initialize edge maps
+  // Initialize all nodes with a placeholder level
   nodes.forEach(node => {
-    incomingEdges.set(node.id, new Set());
-    outgoingEdges.set(node.id, new Set());
     levels.set(node.id, 0);
   });
   
-  // Build edge relationships
-  edges.forEach(edge => {
-    incomingEdges.get(edge.target)?.add(edge.source);
-    outgoingEdges.get(edge.source)?.add(edge.target);
-  });
+  // Focus node is at center (level 0)
+  levels.set(focusNodeId, 0);
   
-  // Find nodes with no dependencies (root nodes)
-  const rootNodes = nodes.filter(node => incomingEdges.get(node.id)?.size === 0);
+  // BFS for dependencies (going left, negative levels)
+  const dependencyQueue: { id: string; level: number }[] = [{ id: focusNodeId, level: 0 }];
+  const dependencyVisited = new Set<string>([focusNodeId]);
   
-  // BFS to assign levels
-  const visited = new Set<string>();
-  const queue: { id: string; level: number }[] = rootNodes.map(node => ({ id: node.id, level: 0 }));
-  
-  while (queue.length > 0) {
-    const { id, level } = queue.shift()!;
+  while (dependencyQueue.length > 0) {
+    const { id, level } = dependencyQueue.shift()!;
     
-    if (visited.has(id)) continue;
-    visited.add(id);
-    
-    // Update level (take maximum to handle nodes with multiple paths)
-    const currentLevel = levels.get(id) || 0;
-    levels.set(id, Math.max(currentLevel, level));
-    
-    // Add children to queue
-    const children = outgoingEdges.get(id) || new Set();
-    children.forEach(childId => {
-      if (!visited.has(childId)) {
-        queue.push({ id: childId, level: level + 1 });
+    // Find nodes that this node depends on (this node imports them)
+    edges.forEach(edge => {
+      if (edge.source === id && !dependencyVisited.has(edge.target)) {
+        dependencyVisited.add(edge.target);
+        const newLevel = level - 1;
+        const currentLevel = levels.get(edge.target);
+        if (currentLevel === undefined || newLevel < currentLevel) {
+          levels.set(edge.target, newLevel);
+          dependencyQueue.push({ id: edge.target, level: newLevel });
+        }
       }
     });
   }
   
-  // Handle nodes that weren't reached (cycles or isolated nodes)
-  nodes.forEach(node => {
-    if (!visited.has(node.id)) {
-      // For cyclic or isolated nodes, calculate based on their connections
-      const incoming = incomingEdges.get(node.id) || new Set();
-      const outgoing = outgoingEdges.get(node.id) || new Set();
-      
-      if (incoming.size > 0) {
-        // Place after its dependencies
-        const maxIncomingLevel = Math.max(...Array.from(incoming).map(id => levels.get(id) || 0));
-        levels.set(node.id, maxIncomingLevel + 1);
-      } else if (outgoing.size > 0) {
-        // Place before its dependents
-        const minOutgoingLevel = Math.min(...Array.from(outgoing).map(id => levels.get(id) || 0));
-        levels.set(node.id, Math.max(0, minOutgoingLevel - 1));
+  // BFS for dependents (going right, positive levels)
+  const dependentQueue: { id: string; level: number }[] = [{ id: focusNodeId, level: 0 }];
+  const dependentVisited = new Set<string>([focusNodeId]);
+  
+  while (dependentQueue.length > 0) {
+    const { id, level } = dependentQueue.shift()!;
+    
+    // Find nodes that depend on this node (they import this node)
+    edges.forEach(edge => {
+      if (edge.target === id && !dependentVisited.has(edge.source)) {
+        dependentVisited.add(edge.source);
+        const newLevel = level + 1;
+        const currentLevel = levels.get(edge.source);
+        if (currentLevel === undefined || newLevel > currentLevel) {
+          levels.set(edge.source, newLevel);
+          dependentQueue.push({ id: edge.source, level: newLevel });
+        }
       }
+    });
+  }
+  
+  // Normalize levels to be non-negative (shift all levels to the right)
+  const minLevel = Math.min(...Array.from(levels.values()).filter(l => l !== undefined));
+  nodes.forEach(node => {
+    const level = levels.get(node.id);
+    if (level !== undefined) {
+      levels.set(node.id, level - minLevel);
+    } else {
+      // Unconnected nodes get placed at the far right
+      levels.set(node.id, 999);
     }
   });
   
@@ -293,17 +295,17 @@ const getLayoutedElements = (nodes: any[], edges: any[], focusNodeId: string) =>
   // Set graph layout options
   dagreGraph.setGraph({
     rankdir: 'LR', // Left to Right layout for dependency flow
-    align: 'UL', // Up-Left alignment to keep same rank nodes aligned
+    align: undefined, // Remove alignment to avoid staircase effect
     nodesep: 50, // Vertical separation between nodes
     ranksep: 150, // Horizontal separation between ranks
     edgesep: 25, // Separation between edges
     marginx: 50,
     marginy: 50,
-    ranker: 'tight-tree', // Use tight-tree algorithm for better rank assignment
+    ranker: 'network-simplex', // Better algorithm for complex graphs
   });
 
-  // Calculate node levels based on dependencies
-  const nodeLevels = calculateNodeLevels(nodes, edges);
+  // Calculate node levels with directional flow from focus node
+  const nodeLevels = calculateDirectionalLevels(nodes, edges, focusNodeId);
 
   // Group nodes by their path structure (e.g., components/atoms, components/molecules)
   const nodeGroups = new Map<string, string[]>();
@@ -341,22 +343,7 @@ const getLayoutedElements = (nodes: any[], edges: any[], focusNodeId: string) =>
     dagreGraph.setNode(node.id, nodeData);
   });
 
-  // Add invisible edges between nodes in the same group to keep them together
-  nodeGroups.forEach((nodeIds) => {
-    if (nodeIds.length > 1) {
-      for (let i = 0; i < nodeIds.length - 1; i++) {
-        // Only add constraint if nodes are at the same level
-        const level1 = nodeLevels.get(nodeIds[i]);
-        const level2 = nodeLevels.get(nodeIds[i + 1]);
-        if (level1 === level2) {
-          dagreGraph.setEdge(nodeIds[i], nodeIds[i + 1], {
-            weight: 0,
-            style: { display: 'none' }
-          });
-        }
-      }
-    }
-  });
+  // Remove invisible edges for now to avoid staircase effect
 
   // Add edges to the graph
   edges.forEach((edge) => {

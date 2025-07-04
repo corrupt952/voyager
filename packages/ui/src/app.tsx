@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { DependencyGraphViewer } from './graph';
 import { ComponentSelector } from './component-selector';
+import { Dashboard } from './components/dashboard';
 import './tailwind.css';
 import { DependencyGraph, DependencyNode } from '@voyager-vue/core';
 
@@ -35,6 +36,12 @@ function App() {
     setSelectedNodeId(nodeId);
   };
 
+  // ホーム（ダッシュボード）に戻る処理
+  const handleHome = () => {
+    window.location.hash = '';
+    setSelectedNodeId(null);
+  };
+
   // URLハッシュの変更を監視
   useEffect(() => {
     const handleHashChange = () => {
@@ -61,16 +68,14 @@ function App() {
           nodes={graphData.nodes}
           onSelect={handleNodeSelect}
           selectedNodeId={selectedNodeId}
+          onHome={handleHome}
         />
       </div>
       <div className="flex-1 h-full overflow-hidden">
         {selectedNodeId ? (
           <DependencyGraphViewer graph={graphData} focusNodeId={selectedNodeId} />
         ) : (
-          <div className="h-full flex items-center justify-center text-gray-600 bg-gray-50"
-          >
-            左のエクスプローラーからコンポーネントを選択してください
-          </div>
+          <Dashboard nodes={graphData.nodes} />
         )}
       </div>
     </div>

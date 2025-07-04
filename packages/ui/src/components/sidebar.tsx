@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { DependencyNode } from '@voyager-vue/core';
 import { getNodeLabel } from '../utils';
 
@@ -6,20 +6,85 @@ interface SidebarProps {
   nodes: Map<string, DependencyNode>;
   onSelect: (nodeId: string) => void;
   selectedNodeId: string | null;
+  onHome?: () => void;
 }
 
 const CATEGORIES = {
   vue: 'Components',
-  script: 'Scripts',
+  script: 'Scripts', 
   definition: 'Type Definitions',
 } as const;
 
-export function Sidebar({ nodes, onSelect, selectedNodeId }: SidebarProps) {
+type SortOption = 'name' | 'dependencies' | 'type' | 'complexity';
+type FilterOption = 'all' | 'vue' | 'script' | 'definition' | 'healthy' | 'warning' | 'error';
+
+
+export function Sidebar({ nodes, onSelect, selectedNodeId, onHome }: SidebarProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<'flat' | 'tree'>('flat');
   const [collapsedFolders, setCollapsedFolders] = useState<Set<string>>(new Set());
-  const [apiTypeFilter, setApiTypeFilter] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<SortOption>('name');
+  const [filterBy, setFilterBy] = useState<FilterOption>('all');
+
+  // Enhanced component analysis with health scoring
+  const componentAnalysis = useMemo(() => {
+    const nodesArray = Array.from(nodes.values());
+    const analysis = new Map<string, {
+      node: DependencyNode;
+      health: 'healthy' | 'warning' | 'error';
+      dependencyCount: number;
+      complexity: number;
+      issues: string[];
+    }>();
+
+    nodesArray.forEach(node => {
+      const importCount = node.dependencies?.imports?.length || 0;
+      const importedByCount = node.dependencies?.importedBy?.length || 0;
+      const dependencyCount = importCount + importedByCount;
+      const issues: string[] = [];
+      
+      // Health scoring logic
+      let health: 'healthy' | 'warning' | 'error' = 'healthy';
+      
+      // Check for high coupling (lots of imports)
+      if (importCount > 10) {
+        issues.push('High coupling');
+        health = 'warning';
+      }
+      
+      // Check for very high coupling
+      if (importCount > 20) {
+        health = 'error';
+      }
+      
+      // Check for potential circular dependencies (simplified)
+      if (node.id.includes('index') && importCount > 5) {
+        issues.push('Potential barrel export');
+        health = health === 'healthy' ? 'warning' : health;
+      }
+      
+      // Check for unused components (not imported by anyone)
+      if (importedByCount === 0 && node.type === 'vue') {
+        issues.push('Unused component');
+        health = health === 'healthy' ? 'warning' : health;
+      }
+      
+      // Calculate complexity score (simplified)
+      const complexity = Math.min(100, dependencyCount * 3 + (node.id.length > 50 ? 10 : 0));
+      
+      analysis.set(node.id, {
+        node,
+        health,
+        dependencyCount,
+        complexity,
+        issues
+      });
+    });
+
+    return analysis;
+  }, [nodes]);
+
 
   // ノードをカテゴリ別に分類
   const categorizedNodes = Array.from(nodes.values()).reduce((acc, node) => {
@@ -41,12 +106,47 @@ export function Sidebar({ nodes, onSelect, selectedNodeId }: SidebarProps) {
     nodes.sort((a, b) => getNodeLabel(a.id).localeCompare(getNodeLabel(b.id)));
   });
 
-  // 検索フィルター
-  const filterNode = (node: DependencyNode) => {
-    const matchesSearch = node.id.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesApiType = apiTypeFilter === 'all' || 
-      (node.type === 'vue' && node.scriptType === apiTypeFilter);
-    return matchesSearch && matchesApiType;
+  // Enhanced filtering and sorting
+  const filterAndSortNodes = (nodes: DependencyNode[]) => {
+    let filteredNodes = nodes.filter(node => {
+      const analysis = componentAnalysis.get(node.id);
+      if (!analysis) return false;
+      
+      // Search filter
+      const matchesSearch = node.id.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      // Type filter
+      const matchesType = filterBy === 'all' || 
+        node.type === filterBy ||
+        (filterBy === 'healthy' && analysis.health === 'healthy') ||
+        (filterBy === 'warning' && analysis.health === 'warning') ||
+        (filterBy === 'error' && analysis.health === 'error');
+      
+      return matchesSearch && matchesType;
+    });
+
+    // Sorting
+    filteredNodes.sort((a, b) => {
+      const analysisA = componentAnalysis.get(a.id);
+      const analysisB = componentAnalysis.get(b.id);
+      
+      if (!analysisA || !analysisB) return 0;
+      
+      switch (sortBy) {
+        case 'name':
+          return getNodeLabel(a.id).localeCompare(getNodeLabel(b.id));
+        case 'dependencies':
+          return analysisB.dependencyCount - analysisA.dependencyCount;
+        case 'complexity':
+          return analysisB.complexity - analysisA.complexity;
+        case 'type':
+          return a.type.localeCompare(b.type);
+        default:
+          return 0;
+      }
+    });
+
+    return filteredNodes;
   };
 
   // カテゴリの折りたたみ状態を切り替える
@@ -132,20 +232,45 @@ export function Sidebar({ nodes, onSelect, selectedNodeId }: SidebarProps) {
     // ファイルをレンダリング
     if (tree.files) {
       tree.files.forEach((node: DependencyNode) => {
-        if (!filterNode(node)) return;
+        const analysis = componentAnalysis.get(node.id);
+        if (!analysis) return;
+        
+        // Apply filtering
+        const matchesSearch = node.id.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesType = filterBy === 'all' || 
+          node.type === filterBy ||
+          (filterBy === 'healthy' && analysis.health === 'healthy') ||
+          (filterBy === 'warning' && analysis.health === 'warning') ||
+          (filterBy === 'error' && analysis.health === 'error');
+        
+        if (!matchesSearch || !matchesType) return;
         
         items.push(
           <div
             key={`file-${node.id}`}
-            className={`px-2 py-1 pl-6 text-sm cursor-pointer rounded hover:bg-gray-100 ${
-              selectedNodeId === node.id ? 'bg-gray-200 text-gray-900' : 'text-gray-600'
+            className={`px-2 py-1.5 pl-6 text-sm cursor-pointer rounded hover:bg-gray-100 group ${
+              selectedNodeId === node.id ? 'bg-blue-50 text-blue-900 border-l-2 border-blue-500' : 'text-gray-700'
             }`}
             onClick={() => onSelect(node.id)}
           >
             <div className="flex justify-between items-center">
-              <span>{node.id.split('/').pop()}</span>
-              {node.type === 'vue' && node.scriptType && node.scriptType !== 'unknown' && (
-                <div className="flex gap-1">
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                {/* Health indicator */}
+                <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                  analysis.health === 'healthy' ? 'bg-green-500' :
+                  analysis.health === 'warning' ? 'bg-yellow-500' :
+                  'bg-red-500'
+                }`} />
+                <span className="truncate">{node.id.split('/').pop()}</span>
+                {(analysis.node.dependencies?.imports?.length > 0 || analysis.node.dependencies?.importedBy?.length > 0) && (
+                  <span className="text-xs text-gray-500">
+                    ({analysis.node.dependencies?.imports?.length || 0}{analysis.node.dependencies?.importedBy?.length > 0 ? `→${analysis.node.dependencies.importedBy.length}` : ''})
+                  </span>
+                )}
+              </div>
+              
+              <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                {node.type === 'vue' && node.scriptType && node.scriptType !== 'unknown' && (
                   <span className={`px-1 py-0.5 rounded text-xs font-bold text-white ${
                     node.scriptType === 'composition' ? 'bg-green-500' :
                     node.scriptType === 'options' ? 'bg-red-500' :
@@ -159,14 +284,21 @@ export function Sidebar({ nodes, onSelect, selectedNodeId }: SidebarProps) {
                      node.scriptType === 'functional' ? 'F' : 
                      node.scriptType === 'class' ? 'Cl' : ''}
                   </span>
-                  {node.scriptLang === 'ts' && (
-                    <span className="px-1 py-0.5 rounded text-xs font-bold bg-blue-600 text-white">
-                      TS
-                    </span>
-                  )}
-                </div>
-              )}
+                )}
+                {node.scriptLang === 'ts' && (
+                  <span className="px-1 py-0.5 rounded text-xs font-bold bg-blue-600 text-white">
+                    TS
+                  </span>
+                )}
+              </div>
             </div>
+            
+            {/* Issues tooltip on hover */}
+            {analysis.issues.length > 0 && (
+              <div className="text-xs text-gray-500 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                {analysis.issues.join(', ')}
+              </div>
+            )}
           </div>
         );
       });
@@ -177,122 +309,185 @@ export function Sidebar({ nodes, onSelect, selectedNodeId }: SidebarProps) {
 
   return (
     <div className="h-full flex flex-col bg-gray-50">
-      <div className="flex gap-2 p-2 border-b border-gray-200 bg-white">
-        <div className="flex-1">
-          <input
-            type="text"
-            placeholder="Search..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-        </div>
-        <div>
-          <select
-            value={apiTypeFilter}
-            onChange={(e) => setApiTypeFilter(e.target.value)}
-            title="Filter by API type"
-            className="px-2 py-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer"
+      {/* Header with branding */}
+      <div className="px-4 py-3 bg-white border-b border-gray-200">
+        <div className="flex items-center justify-between">
+          <button 
+            onClick={onHome}
+            className="flex items-center gap-2 hover:bg-gray-50 rounded-lg p-1 transition-colors"
+            title="Back to dashboard"
           >
-            <option value="all">All APIs</option>
-            <option value="composition">Composition</option>
-            <option value="options">Options</option>
-            <option value="mixed">Mixed</option>
-            <option value="functional">Functional</option>
-          </select>
-        </div>
-        <div className="flex gap-1">
-          <button
-            className={`px-2 py-1 border rounded text-xs cursor-pointer transition-colors ${
-              viewMode === 'flat' 
-                ? 'bg-blue-500 text-white border-blue-500 hover:bg-blue-600' 
-                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
-            }`}
-            onClick={() => setViewMode('flat')}
-            title="Flat view"
-          >
-            ☰
-          </button>
-          <button
-            className={`px-2 py-1 border rounded text-xs cursor-pointer transition-colors ${
-              viewMode === 'tree' 
-                ? 'bg-blue-500 text-white border-blue-500 hover:bg-blue-600' 
-                : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-100'
-            }`}
-            onClick={() => setViewMode('tree')}
-            title="Tree view"
-          >
-            🌳
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold text-sm">V</span>
+            </div>
+            <div>
+              <h1 className="text-sm font-semibold text-gray-900">Voyager</h1>
+              <p className="text-xs text-gray-500">Dependency Explorer</p>
+            </div>
           </button>
         </div>
       </div>
 
-      <div className="flex-1 overflow-auto py-2">
-        {viewMode === 'flat' ? (
-          sortedEntries.map(([type, nodes]) => {
-            const filteredNodes = nodes.filter(filterNode);
-            if (filteredNodes.length === 0) return null;
 
-            return (
-              <div key={type} className="mb-4">
-                <div 
-                  className="px-3 py-1 text-xs font-medium text-gray-600 flex items-center justify-between uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100"
-                  onClick={() => toggleCategory(type)}
-                >
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs text-gray-500">
-                      {collapsedCategories.has(type) ? '▶' : '▼'}
-                    </span>
-                    {CATEGORIES[type as keyof typeof CATEGORIES] || type}
-                  </div>
-                  <span className="bg-gray-200 px-1.5 py-0.5 rounded-full text-xs text-gray-600">
-                    {filteredNodes.length}
-                  </span>
-                </div>
-                <div className={`py-1 transition-all overflow-hidden ${
-                  collapsedCategories.has(type) ? 'max-h-0' : ''
-                }`}>
-                  {filteredNodes.map((node) => (
-                    <div
-                      key={node.id}
-                      className={`px-3 py-1.5 text-sm cursor-pointer hover:bg-gray-100 ${
-                        selectedNodeId === node.id ? 'bg-gray-200 text-gray-900' : 'text-gray-600'
-                      }`}
-                      onClick={() => onSelect(node.id)}
-                    >
-                      <div className="flex justify-between items-center">
-                        <span>{getNodeLabel(node.id)}</span>
-                        {node.type === 'vue' && node.scriptType && node.scriptType !== 'unknown' && (
-                          <div className="flex gap-1">
-                            <span className={`px-1 py-0.5 rounded text-xs font-bold text-white ${
-                              node.scriptType === 'composition' ? 'bg-green-500' :
-                              node.scriptType === 'options' ? 'bg-red-500' :
-                              node.scriptType === 'mixed' ? 'bg-orange-500' :
-                              node.scriptType === 'functional' ? 'bg-cyan-500' :
-                              node.scriptType === 'class' ? 'bg-purple-500' : ''
-                            }`}>
-                              {node.scriptType === 'composition' ? 'C' : 
-                               node.scriptType === 'options' ? 'O' : 
-                               node.scriptType === 'mixed' ? 'M' : 
-                               node.scriptType === 'functional' ? 'F' : 
-                               node.scriptType === 'class' ? 'Cl' : ''}
-                            </span>
-                            {node.scriptLang === 'ts' && (
-                              <span className="px-1 py-0.5 rounded text-xs font-bold bg-blue-600 text-white">
-                                TS
-                              </span>
-                            )}
-                          </div>
-                        )}
-                      </div>
+      {/* Search and Controls */}
+      <div className="px-4 py-3 bg-white border-b border-gray-200 space-y-3">
+        {/* Search */}
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Search components..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+          <svg className="absolute left-2.5 top-2.5 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
+
+        {/* Filters and View Controls */}
+        <div className="flex gap-2">
+          <select
+            value={filterBy}
+            onChange={(e) => setFilterBy(e.target.value as FilterOption)}
+            className="flex-1 px-2 py-1.5 border border-gray-300 rounded text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer"
+          >
+            <option value="all">All Files</option>
+            <option value="vue">Vue Components</option>
+            <option value="script">Scripts</option>
+            <option value="definition">Types</option>
+            <option value="healthy">Healthy</option>
+            <option value="warning">Warnings</option>
+            <option value="error">Critical</option>
+          </select>
+          
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as SortOption)}
+            className="flex-1 px-2 py-1.5 border border-gray-300 rounded text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent cursor-pointer"
+          >
+            <option value="name">Name</option>
+            <option value="dependencies">Dependencies</option>
+            <option value="complexity">Complexity</option>
+            <option value="type">Type</option>
+          </select>
+        </div>
+
+        {/* View Mode Toggle */}
+        <div className="flex gap-1">
+          <button
+            className={`flex-1 px-3 py-1.5 rounded text-xs font-medium transition-colors ${
+              viewMode === 'flat' 
+                ? 'bg-blue-500 text-white' 
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+            onClick={() => setViewMode('flat')}
+          >
+            List View
+          </button>
+          <button
+            className={`flex-1 px-3 py-1.5 rounded text-xs font-medium transition-colors ${
+              viewMode === 'tree' 
+                ? 'bg-blue-500 text-white' 
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+            onClick={() => setViewMode('tree')}
+          >
+            Tree View
+          </button>
+        </div>
+      </div>
+
+      {/* Component List */}
+      <div className="flex-1 overflow-auto">
+        {viewMode === 'flat' ? (
+          <div className="p-2">
+            {sortedEntries.map(([type, nodes]) => {
+              const filteredNodes = filterAndSortNodes(nodes);
+              if (filteredNodes.length === 0) return null;
+
+              return (
+                <div key={type} className="mb-4">
+                  <div 
+                    className="px-2 py-2 text-xs font-semibold text-gray-700 flex items-center justify-between cursor-pointer select-none hover:bg-gray-100 rounded"
+                    onClick={() => toggleCategory(type)}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-500">
+                        {collapsedCategories.has(type) ? '▶' : '▼'}
+                      </span>
+                      {CATEGORIES[type as keyof typeof CATEGORIES] || type}
                     </div>
-                  ))}
+                    <span className="bg-gray-200 px-2 py-0.5 rounded-full text-xs text-gray-600">
+                      {filteredNodes.length}
+                    </span>
+                  </div>
+                  <div className={`transition-all overflow-hidden ${
+                    collapsedCategories.has(type) ? 'max-h-0' : ''
+                  }`}>
+                    {filteredNodes.map((node) => {
+                      const analysis = componentAnalysis.get(node.id);
+                      if (!analysis) return null;
+
+                      return (
+                        <div
+                          key={node.id}
+                          className={`px-2 py-2 text-sm cursor-pointer rounded hover:bg-gray-100 group ${
+                            selectedNodeId === node.id ? 'bg-blue-50 text-blue-900 border-l-2 border-blue-500' : 'text-gray-700'
+                          }`}
+                          onClick={() => onSelect(node.id)}
+                        >
+                          <div className="flex justify-between items-start">
+                            <div className="flex items-center gap-2 flex-1 min-w-0">
+                              {/* Health indicator */}
+                              <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                                analysis.health === 'healthy' ? 'bg-green-500' :
+                                analysis.health === 'warning' ? 'bg-yellow-500' :
+                                'bg-red-500'
+                              }`} />
+                              <div className="flex-1 min-w-0">
+                                <div className="font-medium truncate">{getNodeLabel(node.id)}</div>
+                                <div className="text-xs text-gray-500">
+                                  {analysis.node.dependencies?.imports?.length > 0 && `${analysis.node.dependencies.imports.length} imports`}
+                                  {analysis.node.dependencies?.importedBy?.length > 0 && (analysis.node.dependencies?.imports?.length > 0 ? ' • ' : '') + `${analysis.node.dependencies.importedBy.length} used by`}
+                                  {analysis.issues.length > 0 && ` • ${analysis.issues.join(', ')}`}
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                              {node.type === 'vue' && node.scriptType && node.scriptType !== 'unknown' && (
+                                <span className={`px-1 py-0.5 rounded text-xs font-bold text-white ${
+                                  node.scriptType === 'composition' ? 'bg-green-500' :
+                                  node.scriptType === 'options' ? 'bg-red-500' :
+                                  node.scriptType === 'mixed' ? 'bg-orange-500' :
+                                  node.scriptType === 'functional' ? 'bg-cyan-500' :
+                                  node.scriptType === 'class' ? 'bg-purple-500' : ''
+                                }`}>
+                                  {node.scriptType === 'composition' ? 'C' : 
+                                   node.scriptType === 'options' ? 'O' : 
+                                   node.scriptType === 'mixed' ? 'M' : 
+                                   node.scriptType === 'functional' ? 'F' : 
+                                   node.scriptType === 'class' ? 'Cl' : ''}
+                                </span>
+                              )}
+                              {node.scriptLang === 'ts' && (
+                                <span className="px-1 py-0.5 rounded text-xs font-bold bg-blue-600 text-white">
+                                  TS
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            );
-          })
+              );
+            })}
+          </div>
         ) : (
-          <div className="px-2">
+          <div className="p-2">
             {renderTree(buildTree())}
           </div>
         )}

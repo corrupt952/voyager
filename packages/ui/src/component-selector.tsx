@@ -20,6 +20,7 @@ export function ComponentSelector({ nodes, onSelect, selectedNodeId }: Component
   const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<'flat' | 'tree'>('flat');
   const [collapsedFolders, setCollapsedFolders] = useState<Set<string>>(new Set());
+  const [apiTypeFilter, setApiTypeFilter] = useState<string>('all');
 
   // ノードをカテゴリ別に分類
   const categorizedNodes = Array.from(nodes.values()).reduce((acc, node) => {
@@ -42,8 +43,12 @@ export function ComponentSelector({ nodes, onSelect, selectedNodeId }: Component
   });
 
   // 検索フィルター
-  const filterNode = (node: DependencyNode) =>
-    node.id.toLowerCase().includes(searchQuery.toLowerCase());
+  const filterNode = (node: DependencyNode) => {
+    const matchesSearch = node.id.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesApiType = apiTypeFilter === 'all' || 
+      (node.type === 'vue' && node.scriptType === apiTypeFilter);
+    return matchesSearch && matchesApiType;
+  };
 
   // カテゴリの折りたたみ状態を切り替える
   const toggleCategory = (category: string) => {
@@ -131,7 +136,22 @@ export function ComponentSelector({ nodes, onSelect, selectedNodeId }: Component
             className={`tree-file ${selectedNodeId === node.id ? 'selected' : ''}`}
             onClick={() => onSelect(node.id)}
           >
-            {node.id.split('/').pop()}
+            <div className="node-content">
+              <span>{node.id.split('/').pop()}</span>
+              {node.type === 'vue' && node.scriptType && node.scriptType !== 'unknown' && (
+                <div className="node-badges">
+                  <span className={`api-badge ${node.scriptType}`}>
+                    {node.scriptType === 'composition' ? 'C' : 
+                     node.scriptType === 'options' ? 'O' : 
+                     node.scriptType === 'mixed' ? 'M' : 
+                     node.scriptType === 'scriptSetup' ? 'S' : ''}
+                  </span>
+                  {node.scriptLang === 'ts' && (
+                    <span className="lang-badge">TS</span>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         );
       });
@@ -150,6 +170,19 @@ export function ComponentSelector({ nodes, onSelect, selectedNodeId }: Component
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
+        </div>
+        <div className="api-filter">
+          <select
+            value={apiTypeFilter}
+            onChange={(e) => setApiTypeFilter(e.target.value)}
+            title="Filter by API type"
+          >
+            <option value="all">All APIs</option>
+            <option value="composition">Composition</option>
+            <option value="options">Options</option>
+            <option value="mixed">Mixed</option>
+            <option value="scriptSetup">Script Setup</option>
+          </select>
         </div>
         <div className="view-toggle">
           <button
@@ -193,7 +226,22 @@ export function ComponentSelector({ nodes, onSelect, selectedNodeId }: Component
                     className={`node ${selectedNodeId === node.id ? 'selected' : ''}`}
                     onClick={() => onSelect(node.id)}
                   >
-                    {getNodeLabel(node.id)}
+                    <div className="node-content">
+                      <span>{getNodeLabel(node.id)}</span>
+                      {node.type === 'vue' && node.scriptType && node.scriptType !== 'unknown' && (
+                        <div className="node-badges">
+                          <span className={`api-badge ${node.scriptType}`}>
+                            {node.scriptType === 'composition' ? 'C' : 
+                             node.scriptType === 'options' ? 'O' : 
+                             node.scriptType === 'mixed' ? 'M' : 
+                             node.scriptType === 'scriptSetup' ? 'S' : ''}
+                          </span>
+                          {node.scriptLang === 'ts' && (
+                            <span className="lang-badge">TS</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -384,6 +432,63 @@ export function ComponentSelector({ nodes, onSelect, selectedNodeId }: Component
         .node.selected {
           background: #dee2e6;
           color: #000;
+        }
+
+        .node-content {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .node-badges {
+          display: flex;
+          gap: 4px;
+        }
+
+        .api-badge {
+          padding: 1px 4px;
+          border-radius: 8px;
+          font-size: 10px;
+          font-weight: bold;
+          color: white;
+        }
+
+        .api-badge.composition {
+          background: #00BD7E;
+        }
+
+        .api-badge.options {
+          background: #FF6B6B;
+        }
+
+        .api-badge.mixed {
+          background: #FF8C42;
+        }
+
+        .api-badge.scriptSetup {
+          background: #4ECDC4;
+        }
+
+        .lang-badge {
+          padding: 1px 4px;
+          border-radius: 8px;
+          font-size: 10px;
+          font-weight: bold;
+          background: #3178c6;
+          color: white;
+        }
+
+        .api-filter {
+          flex-shrink: 0;
+        }
+
+        .api-filter select {
+          padding: 6px 8px;
+          border: 1px solid #ced4da;
+          border-radius: 4px;
+          font-size: 13px;
+          background: white;
+          cursor: pointer;
         }
       `}</style>
     </div>

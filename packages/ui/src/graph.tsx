@@ -469,6 +469,83 @@ function extractDependencySubgraph(graph: DependencyGraph, focusNodeId: string) 
   return { nodes, edges };
 }
 
+// カスタムノードコンポーネント
+const CustomNode = ({ data }: { data: any }) => {
+  const { label, info } = data;
+  const scriptType = info?.scriptType;
+  const scriptLang = info?.scriptLang;
+  const nodeType = info?.type;
+
+  // APIタイプのバッジを作成
+  const getApiBadge = () => {
+    if (nodeType !== 'vue' || !scriptType || scriptType === 'unknown') return null;
+    
+    const badgeStyle = {
+      padding: '2px 6px',
+      borderRadius: '10px',
+      fontSize: '9px',
+      fontWeight: 'bold',
+      marginLeft: '4px',
+      display: 'inline-block',
+    };
+
+    const badges = [];
+    
+    // APIタイプバッジ
+    if (scriptType === 'composition') {
+      badges.push(
+        <span key="api" style={{ ...badgeStyle, backgroundColor: '#00BD7E', color: '#fff' }}>
+          Composition
+        </span>
+      );
+    } else if (scriptType === 'options') {
+      badges.push(
+        <span key="api" style={{ ...badgeStyle, backgroundColor: '#FF6B6B', color: '#fff' }}>
+          Options
+        </span>
+      );
+    } else if (scriptType === 'mixed') {
+      badges.push(
+        <span key="api" style={{ ...badgeStyle, backgroundColor: '#FF8C42', color: '#fff' }}>
+          Mixed
+        </span>
+      );
+    } else if (scriptType === 'scriptSetup') {
+      badges.push(
+        <span key="api" style={{ ...badgeStyle, backgroundColor: '#4ECDC4', color: '#fff' }}>
+          Script Setup
+        </span>
+      );
+    }
+    
+    // 言語バッジ
+    if (scriptLang === 'ts') {
+      badges.push(
+        <span key="lang" style={{ ...badgeStyle, backgroundColor: '#3178c6', color: '#fff' }}>
+          TS
+        </span>
+      );
+    }
+    
+    return badges;
+  };
+
+  return (
+    <div style={{ padding: '8px 12px', textAlign: 'center' }}>
+      <div>{label}</div>
+      <div style={{ marginTop: '4px' }}>
+        {getApiBadge()}
+      </div>
+    </div>
+  );
+};
+
+const nodeTypes = {
+  vueComponent: CustomNode,
+  script: CustomNode,
+  definition: CustomNode,
+};
+
 // ReactFlowを使用するコンポーネント
 function DependencyGraphViewerInner({ graph, focusNodeId }: DependencyGraphViewerProps) {
   const [nodes, setNodes] = React.useState<any[]>([]);
@@ -539,6 +616,7 @@ function DependencyGraphViewerInner({ graph, focusNodeId }: DependencyGraphViewe
         onNodesChange={onNodesChange}
         onNodeMouseEnter={onNodeMouseEnter}
         onNodeMouseLeave={onNodeMouseLeave}
+        nodeTypes={nodeTypes}
         fitView
         fitViewOptions={{
           padding: 0.2,
@@ -556,6 +634,60 @@ function DependencyGraphViewerInner({ graph, focusNodeId }: DependencyGraphViewe
         <Controls />
         <MiniMap nodeStrokeWidth={3} zoomable pannable />
       </ReactFlow>
+      <div
+        style={{
+          position: 'fixed',
+          bottom: 20,
+          right: 20,
+          backgroundColor: 'white',
+          padding: '12px 16px',
+          borderRadius: '8px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+          fontSize: '12px',
+          zIndex: 1000,
+        }}
+      >
+        <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>Legend</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ width: '16px', height: '16px', backgroundColor: '#42b883', borderRadius: '2px' }}></div>
+            <span>Vue Component</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ width: '16px', height: '16px', backgroundColor: '#2196f3', borderRadius: '2px' }}></div>
+            <span>Script</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ width: '16px', height: '16px', backgroundColor: '#3178c6', borderRadius: '2px' }}></div>
+            <span>Type Definition</span>
+          </div>
+          <div style={{ marginTop: '8px', borderTop: '1px solid #e0e0e0', paddingTop: '8px' }}>
+            <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>API Types</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '11px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ backgroundColor: '#00BD7E', color: '#fff', padding: '1px 6px', borderRadius: '10px', fontSize: '10px' }}>C</span>
+                <span>Composition API</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ backgroundColor: '#FF6B6B', color: '#fff', padding: '1px 6px', borderRadius: '10px', fontSize: '10px' }}>O</span>
+                <span>Options API</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ backgroundColor: '#FF8C42', color: '#fff', padding: '1px 6px', borderRadius: '10px', fontSize: '10px' }}>M</span>
+                <span>Mixed API</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ backgroundColor: '#4ECDC4', color: '#fff', padding: '1px 6px', borderRadius: '10px', fontSize: '10px' }}>S</span>
+                <span>Script Setup</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ backgroundColor: '#3178c6', color: '#fff', padding: '1px 6px', borderRadius: '10px', fontSize: '10px' }}>TS</span>
+                <span>TypeScript</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
       {hoveredNode && (
         <div
           style={{

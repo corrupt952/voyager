@@ -12,6 +12,18 @@ interface Stats {
   circularDependencies: string[][];
   orphanedComponents: string[];
   mostImported: { file: string; count: number }[];
+  vueApiTypes: {
+    composition: number;
+    options: number;
+    mixed: number;
+    scriptSetup: number;
+    unknown: number;
+  };
+  vueLanguages: {
+    typescript: number;
+    javascript: number;
+    unknown: number;
+  };
 }
 
 function findCircularDependencies(graph: Map<string, DependencyNode>): string[][] {
@@ -58,6 +70,15 @@ function findCircularDependencies(graph: Map<string, DependencyNode>): string[][
   }
 
   return cycles;
+}
+
+function getApiTypeSummary(stats: Stats): string {
+  const apiTypes = [];
+  if (stats.vueApiTypes.composition > 0) apiTypes.push(`${stats.vueApiTypes.composition} Composition`);
+  if (stats.vueApiTypes.options > 0) apiTypes.push(`${stats.vueApiTypes.options} Options`);
+  if (stats.vueApiTypes.mixed > 0) apiTypes.push(`${stats.vueApiTypes.mixed} Mixed`);
+  if (stats.vueApiTypes.scriptSetup > 0) apiTypes.push(`${stats.vueApiTypes.scriptSetup} Script Setup`);
+  return apiTypes.length > 0 ? ` (${apiTypes.join(', ')})` : '';
 }
 
 export function createStatsCommand(): Command {
@@ -112,7 +133,38 @@ export function createStatsCommand(): Command {
             circularDependencies: findCircularDependencies(graph.nodes),
             orphanedComponents: [],
             mostImported: [],
+            vueApiTypes: {
+              composition: 0,
+              options: 0,
+              mixed: 0,
+              scriptSetup: 0,
+              unknown: 0,
+            },
+            vueLanguages: {
+              typescript: 0,
+              javascript: 0,
+              unknown: 0,
+            },
           };
+
+          // Vue APIタイプと言語の統計を収集
+          Array.from(graph.nodes.values()).forEach((node: DependencyNode) => {
+            if (node.type === 'vue') {
+              // APIタイプの統計
+              const scriptType = node.scriptType || 'unknown';
+              if (scriptType === 'composition') stats.vueApiTypes.composition++;
+              else if (scriptType === 'options') stats.vueApiTypes.options++;
+              else if (scriptType === 'mixed') stats.vueApiTypes.mixed++;
+              else if (scriptType === 'scriptSetup') stats.vueApiTypes.scriptSetup++;
+              else stats.vueApiTypes.unknown++;
+
+              // 言語の統計
+              const scriptLang = node.scriptLang || 'unknown';
+              if (scriptLang === 'ts') stats.vueLanguages.typescript++;
+              else if (scriptLang === 'js') stats.vueLanguages.javascript++;
+              else stats.vueLanguages.unknown++;
+            }
+          });
 
           // 孤立したコンポーネント（importされていない）
           stats.orphanedComponents = Array.from(graph.nodes.values())
@@ -139,6 +191,27 @@ export function createStatsCommand(): Command {
             console.log(chalk.blue('Files:'));
             console.log(`  Total files: ${chalk.green(stats.totalFiles)}`);
             console.log(`  Vue components: ${chalk.green(stats.vueComponents)}`);
+            if (stats.vueComponents > 0) {
+              console.log(chalk.gray('    API Types:'));
+              if (stats.vueApiTypes.composition > 0) 
+                console.log(`      Composition API: ${chalk.green(stats.vueApiTypes.composition)}`);
+              if (stats.vueApiTypes.options > 0) 
+                console.log(`      Options API: ${chalk.green(stats.vueApiTypes.options)}`);
+              if (stats.vueApiTypes.mixed > 0) 
+                console.log(`      Mixed API: ${chalk.yellow(stats.vueApiTypes.mixed)}`);
+              if (stats.vueApiTypes.scriptSetup > 0) 
+                console.log(`      Script Setup: ${chalk.green(stats.vueApiTypes.scriptSetup)}`);
+              if (stats.vueApiTypes.unknown > 0) 
+                console.log(`      Unknown: ${chalk.gray(stats.vueApiTypes.unknown)}`);
+              
+              console.log(chalk.gray('    Languages:'));
+              if (stats.vueLanguages.typescript > 0) 
+                console.log(`      TypeScript: ${chalk.blue(stats.vueLanguages.typescript)}`);
+              if (stats.vueLanguages.javascript > 0) 
+                console.log(`      JavaScript: ${chalk.yellow(stats.vueLanguages.javascript)}`);
+              if (stats.vueLanguages.unknown > 0) 
+                console.log(`      Unknown: ${chalk.gray(stats.vueLanguages.unknown)}`);
+            }
             console.log(`  Script files: ${chalk.green(stats.scriptFiles)}`);
             console.log(`  Type definitions: ${chalk.green(stats.typeDefinitions)}`);
             

@@ -61,6 +61,8 @@ export default defineConfig({
   },
   define: {
     'process.env.NODE_ENV': JSON.stringify('production'),
+    'process.env': JSON.stringify({ NODE_ENV: 'production' }),
+    'global': 'window',
   },
   resolve: {
     alias: {

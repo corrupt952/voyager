@@ -9,21 +9,11 @@ import { DEFAULT_IGNORE_PATTERNS } from '../constants.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// HTMLテンプレートを読み込む
 const template = readFileSync(
   join(__dirname, '../../node_modules/@voyager-vue/ui/dist/template.html'),
   'utf-8'
 );
 
-// JavaScriptとCSSファイルを読み込む
-const jsContent = readFileSync(
-  join(__dirname, '../../assets/visualizer.iife.js'),
-  'utf-8'
-);
-const cssContent = readFileSync(
-  join(__dirname, '../../assets/style.css'),
-  'utf-8'
-);
 
 export function createGraphCommand(): Command {
   const command = new Command('graph');
@@ -68,7 +58,6 @@ export function createGraphCommand(): Command {
             });
           }
 
-          // ファイル収集
           const files = await collectFiles(directory, ignorePatterns);
 
           console.log(chalk.blue('\n📁 Found files:'));
@@ -85,7 +74,6 @@ export function createGraphCommand(): Command {
             chalk.green(files.filter((f: CollectedFile) => f.type === 'definition').length)
           );
 
-          // 依存関係の解析
           console.log(chalk.blue('\n🔍 Analyzing dependencies...'));
           const analyzer = new DependencyAnalyzer({
             rootDir: directory,
@@ -98,14 +86,12 @@ export function createGraphCommand(): Command {
           analyzer.analyze(files.map((f: CollectedFile) => f.absolutePath));
           const graph = analyzer.getGraph();
 
-          // 解析結果の表示
           if (options.verbose) {
             console.log(chalk.blue('\n📊 Analysis results:'));
             console.log(chalk.gray('Nodes:'), graph.nodes.size);
             console.log(chalk.gray('Edges:'), graph.edges.size);
           }
 
-          // HTMLファイルの生成
           const absoluteOutputPath = resolve(process.cwd(), options.output);
 
           const graphData = JSON.stringify({
@@ -113,15 +99,10 @@ export function createGraphCommand(): Command {
             edges: Array.from(graph.edges),
           });
 
-          // テンプレートにグラフデータとアセットを埋め込む
-          let html = template.replace(
+          const html = template.replace(
             'window.__GRAPH_DATA__ = null',
             `window.__GRAPH_DATA__ = ${graphData}`
           );
-          
-          // JavaScriptとCSSを埋め込む
-          html = html.replace('__JS_CONTENT__', jsContent);
-          html = html.replace('__CSS_CONTENT__', cssContent);
           
           writeFileSync(absoluteOutputPath, html);
 

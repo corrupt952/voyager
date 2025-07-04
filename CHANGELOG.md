@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.11] - 2025-07-04
+
+### Added
+- Interactive expandable nodes in dependency graph for better navigation
+- Auto-expand focus node when graph focus changes
+- Enhanced sidebar with health analysis and advanced filtering options
+
+### Changed
+- Refactored ComponentSelector into separate Sidebar component for better organization
+- Improved graph component structure with cleaner code organization
+
+### Fixed
+- Removed dead code and unused imports from graph components
+
 ## [0.0.10] - 2025-07-04
 
 ### Fixed

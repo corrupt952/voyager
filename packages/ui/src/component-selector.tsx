@@ -161,21 +161,23 @@ export function ComponentSelector({ nodes, onSelect, selectedNodeId }: Component
   };
 
   return (
-    <div className="component-selector">
-      <div className="toolbar">
-        <div className="search-bar">
+    <div className="h-full flex flex-col bg-gray-50">
+      <div className="flex gap-2 p-2 border-b border-gray-200 bg-white">
+        <div className="flex-1">
           <input
             type="text"
             placeholder="Search..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs"
           />
         </div>
-        <div className="api-filter">
+        <div>
           <select
             value={apiTypeFilter}
             onChange={(e) => setApiTypeFilter(e.target.value)}
             title="Filter by API type"
+            className="px-2 py-1 border border-gray-300 rounded text-xs"
           >
             <option value="all">All APIs</option>
             <option value="composition">Composition</option>
@@ -184,16 +186,16 @@ export function ComponentSelector({ nodes, onSelect, selectedNodeId }: Component
             <option value="scriptSetup">Script Setup</option>
           </select>
         </div>
-        <div className="view-toggle">
+        <div className="flex gap-1">
           <button
-            className={`toggle-btn ${viewMode === 'flat' ? 'active' : ''}`}
+            className={`px-2 py-1 border border-gray-300 rounded text-xs cursor-pointer hover:bg-gray-100 ${viewMode === 'flat' ? 'bg-blue-500 text-white border-blue-500' : 'bg-white text-gray-700'}`}
             onClick={() => setViewMode('flat')}
             title="Flat view"
           >
             ☰
           </button>
           <button
-            className={`toggle-btn ${viewMode === 'tree' ? 'active' : ''}`}
+            className={`px-2 py-1 border border-gray-300 rounded text-xs cursor-pointer hover:bg-gray-100 ${viewMode === 'tree' ? 'bg-blue-500 text-white border-blue-500' : 'bg-white text-gray-700'}`}
             onClick={() => setViewMode('tree')}
             title="Tree view"
           >
@@ -202,7 +204,7 @@ export function ComponentSelector({ nodes, onSelect, selectedNodeId }: Component
         </div>
       </div>
 
-      <div className="content-list">
+      <div className="flex-1 overflow-auto py-2">
         {viewMode === 'flat' ? (
           sortedEntries.map(([type, nodes]) => {
           const filteredNodes = nodes.filter(filterNode);
@@ -256,64 +258,6 @@ export function ComponentSelector({ nodes, onSelect, selectedNodeId }: Component
       </div>
 
       <style>{`
-        .component-selector {
-          height: 100%;
-          display: flex;
-          flex-direction: column;
-          background: #f8f9fa;
-        }
-
-        .toolbar {
-          display: flex;
-          gap: 8px;
-          padding: 8px;
-          border-bottom: 1px solid #e9ecef;
-          background: white;
-        }
-
-        .search-bar {
-          flex: 1;
-        }
-
-        .search-bar input {
-          width: 100%;
-          padding: 6px 8px;
-          border: 1px solid #ced4da;
-          border-radius: 4px;
-          font-size: 13px;
-        }
-
-        .content-list {
-          flex: 1;
-          overflow: auto;
-          padding: 8px 0;
-        }
-
-        .view-toggle {
-          display: flex;
-          gap: 4px;
-        }
-
-        .toggle-btn {
-          padding: 4px 8px;
-          border: 1px solid #ced4da;
-          background: white;
-          cursor: pointer;
-          font-size: 14px;
-          border-radius: 4px;
-          transition: all 0.2s;
-        }
-
-        .toggle-btn:hover {
-          background: #f8f9fa;
-        }
-
-        .toggle-btn.active {
-          background: #007bff;
-          color: white;
-          border-color: #007bff;
-        }
-
         .tree-view {
           padding: 0 8px;
         }

@@ -531,9 +531,9 @@ const CustomNode = ({ data }: { data: any }) => {
   };
 
   return (
-    <div style={{ padding: '8px 12px', textAlign: 'center' }}>
+    <div className="px-3 py-2 text-center">
       <div>{label}</div>
-      <div style={{ marginTop: '4px' }}>
+      <div className="mt-1">
         {getApiBadge()}
       </div>
     </div>
@@ -634,31 +634,19 @@ function DependencyGraphViewerInner({ graph, focusNodeId }: DependencyGraphViewe
         <Controls />
         <MiniMap nodeStrokeWidth={3} zoomable pannable />
       </ReactFlow>
-      <div
-        style={{
-          position: 'fixed',
-          bottom: 20,
-          right: 20,
-          backgroundColor: 'white',
-          padding: '12px 16px',
-          borderRadius: '8px',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-          fontSize: '12px',
-          zIndex: 1000,
-        }}
-      >
-        <div style={{ fontWeight: 'bold', marginBottom: '8px' }}>Legend</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div style={{ width: '16px', height: '16px', backgroundColor: '#42b883', borderRadius: '2px' }}></div>
+      <div className="fixed bottom-5 right-5 bg-white px-4 py-3 rounded-lg shadow-lg text-xs z-[1000]">
+        <div className="font-bold mb-2">Legend</div>
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-green-500 rounded-sm"></div>
             <span>Vue Component</span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div style={{ width: '16px', height: '16px', backgroundColor: '#2196f3', borderRadius: '2px' }}></div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-blue-500 rounded-sm"></div>
             <span>Script</span>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div style={{ width: '16px', height: '16px', backgroundColor: '#3178c6', borderRadius: '2px' }}></div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 bg-blue-600 rounded-sm"></div>
             <span>Type Definition</span>
           </div>
           <div style={{ marginTop: '8px', borderTop: '1px solid #e0e0e0', paddingTop: '8px' }}>

@@ -57,26 +57,18 @@ function App() {
 
   return (
     <div className="flex w-full h-full">
-      <div style={{ width: '280px', borderRight: '1px solid #dee2e6' }}>
+      <div className="w-[280px] border-r border-gray-300">
         <ComponentSelector
           nodes={graphData.nodes}
           onSelect={handleNodeSelect}
           selectedNodeId={selectedNodeId}
         />
       </div>
-      <div style={{ flex: 1 }}>
+      <div className="flex-1">
         {selectedNodeId ? (
           <DependencyGraphViewer graph={graphData} focusNodeId={selectedNodeId} />
         ) : (
-          <div
-            style={{
-              height: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#666',
-              background: '#f8f9fa',
-            }}
+          <div className="h-full flex items-center justify-center text-gray-600 bg-gray-50"
           >
             左のエクスプローラーからコンポーネントを選択してください
           </div>

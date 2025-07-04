@@ -1,1 +1,14 @@
 @import "tailwindcss";
+
+/* React Flow競合防止 */
+.react-flow__renderer {
+  z-index: 4 !important;
+}
+
+.react-flow__selection {
+  z-index: 6 !important;
+}
+
+.react-flow__background {
+  z-index: -1 !important;
+}

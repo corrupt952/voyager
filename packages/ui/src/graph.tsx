@@ -510,10 +510,10 @@ const CustomNode = ({ data }: { data: any }) => {
           Mixed
         </span>
       );
-    } else if (scriptType === 'scriptSetup') {
+    } else if (scriptType === 'functional') {
       badges.push(
         <span key="api" style={{ ...badgeStyle, backgroundColor: '#4ECDC4', color: '#fff' }}>
-          Script Setup
+          Functional
         </span>
       );
     }

@@ -144,7 +144,8 @@ export function ComponentSelector({ nodes, onSelect, selectedNodeId }: Component
                     {node.scriptType === 'composition' ? 'C' : 
                      node.scriptType === 'options' ? 'O' : 
                      node.scriptType === 'mixed' ? 'M' : 
-                     node.scriptType === 'scriptSetup' ? 'S' : ''}
+                     node.scriptType === 'functional' ? 'F' : 
+                     node.scriptType === 'class' ? 'Cl' : ''}
                   </span>
                   {node.scriptLang === 'ts' && (
                     <span className="lang-badge">TS</span>
@@ -183,7 +184,7 @@ export function ComponentSelector({ nodes, onSelect, selectedNodeId }: Component
             <option value="composition">Composition</option>
             <option value="options">Options</option>
             <option value="mixed">Mixed</option>
-            <option value="scriptSetup">Script Setup</option>
+            <option value="functional">Functional</option>
           </select>
         </div>
         <div className="flex gap-1">
@@ -236,7 +237,8 @@ export function ComponentSelector({ nodes, onSelect, selectedNodeId }: Component
                             {node.scriptType === 'composition' ? 'C' : 
                              node.scriptType === 'options' ? 'O' : 
                              node.scriptType === 'mixed' ? 'M' : 
-                             node.scriptType === 'scriptSetup' ? 'S' : ''}
+                             node.scriptType === 'functional' ? 'F' : 
+                     node.scriptType === 'class' ? 'Cl' : ''}
                           </span>
                           {node.scriptLang === 'ts' && (
                             <span className="lang-badge">TS</span>

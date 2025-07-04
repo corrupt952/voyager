@@ -16,7 +16,8 @@ interface Stats {
     composition: number;
     options: number;
     mixed: number;
-    scriptSetup: number;
+    functional: number;
+    class: number;
     unknown: number;
   };
   vueLanguages: {
@@ -77,7 +78,8 @@ function getApiTypeSummary(stats: Stats): string {
   if (stats.vueApiTypes.composition > 0) apiTypes.push(`${stats.vueApiTypes.composition} Composition`);
   if (stats.vueApiTypes.options > 0) apiTypes.push(`${stats.vueApiTypes.options} Options`);
   if (stats.vueApiTypes.mixed > 0) apiTypes.push(`${stats.vueApiTypes.mixed} Mixed`);
-  if (stats.vueApiTypes.scriptSetup > 0) apiTypes.push(`${stats.vueApiTypes.scriptSetup} Script Setup`);
+  if (stats.vueApiTypes.functional > 0) apiTypes.push(`${stats.vueApiTypes.functional} Functional`);
+  if (stats.vueApiTypes.class > 0) apiTypes.push(`${stats.vueApiTypes.class} Class`);
   return apiTypes.length > 0 ? ` (${apiTypes.join(', ')})` : '';
 }
 
@@ -137,7 +139,8 @@ export function createStatsCommand(): Command {
               composition: 0,
               options: 0,
               mixed: 0,
-              scriptSetup: 0,
+              functional: 0,
+              class: 0,
               unknown: 0,
             },
             vueLanguages: {
@@ -155,7 +158,8 @@ export function createStatsCommand(): Command {
               if (scriptType === 'composition') stats.vueApiTypes.composition++;
               else if (scriptType === 'options') stats.vueApiTypes.options++;
               else if (scriptType === 'mixed') stats.vueApiTypes.mixed++;
-              else if (scriptType === 'scriptSetup') stats.vueApiTypes.scriptSetup++;
+              else if (scriptType === 'functional') stats.vueApiTypes.functional++;
+              else if (scriptType === 'class') stats.vueApiTypes.class++;
               else stats.vueApiTypes.unknown++;
 
               // 言語の統計
@@ -199,8 +203,10 @@ export function createStatsCommand(): Command {
                 console.log(`      Options API: ${chalk.green(stats.vueApiTypes.options)}`);
               if (stats.vueApiTypes.mixed > 0) 
                 console.log(`      Mixed API: ${chalk.yellow(stats.vueApiTypes.mixed)}`);
-              if (stats.vueApiTypes.scriptSetup > 0) 
-                console.log(`      Script Setup: ${chalk.green(stats.vueApiTypes.scriptSetup)}`);
+              if (stats.vueApiTypes.functional > 0) 
+                console.log(`      Functional: ${chalk.green(stats.vueApiTypes.functional)}`);
+              if (stats.vueApiTypes.class > 0) 
+                console.log(`      Class: ${chalk.green(stats.vueApiTypes.class)}`);
               if (stats.vueApiTypes.unknown > 0) 
                 console.log(`      Unknown: ${chalk.gray(stats.vueApiTypes.unknown)}`);
               

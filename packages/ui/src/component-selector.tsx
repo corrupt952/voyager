@@ -81,7 +81,7 @@ export function ComponentSelector({ nodes, onSelect, selectedNodeId }: Component
     const tree: any = {};
     
     Array.from(nodes.values()).forEach((node) => {
-      const parts = node.id.split('/');
+      const parts = node.relativePath.split('/');
       let current = tree;
       
       parts.forEach((part, index) => {

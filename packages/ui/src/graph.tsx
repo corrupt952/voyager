@@ -13,51 +13,7 @@ import dagre from '@dagrejs/dagre';
 import { DependencyGraph, DependencyNode, DependencyEdge } from '@voyager-vue/core';
 import { getNodeLabel } from './utils';
 
-// デフォルトのスタイル
-const defaultNodeStyle = {
-  padding: '4px',
-  borderRadius: '3px',
-  fontSize: '10px',
-  transition: 'all 0.3s ease',
-} as const;
 
-// ノードタイプごとのスタイル
-const nodeStyles = {
-  vueComponent: {
-    ...defaultNodeStyle,
-    background: '#42b883', // Vue.jsの色
-    color: '#ffffff',
-    border: '1px solid #35495e',
-  },
-  script: {
-    ...defaultNodeStyle,
-    background: '#2196f3', // JavaScriptの色を青色に変更
-    color: '#ffffff',
-    border: '1px solid #1976d2',
-  },
-  definition: {
-    ...defaultNodeStyle,
-    background: '#3178c6', // TypeScriptの色
-    color: '#ffffff',
-    border: '1px solid #235a97',
-  },
-} as const;
-
-// 選択されたノードのスタイル
-const selectedNodeStyle = {
-  boxShadow: '0 0 8px 2px rgba(0, 0, 0, 0.2)',
-  border: '2px solid #ff7e67 !important',
-  zIndex: 1,
-} as const;
-
-// ノードタイプのマッピング
-const nodeTypeMap = {
-  vue: 'vueComponent',
-  script: 'script',
-  definition: 'definition',
-} as const;
-
-// ノードスタイルの定義
 const getNodeStyle = (type: string, isSelected: boolean, isExpanded: boolean = false) => {
   const baseStyle = {
     padding: '4px',
@@ -108,11 +64,8 @@ const getNodeStyle = (type: string, isSelected: boolean, isExpanded: boolean = f
   };
 };
 
-// 相対パスを正規化する関数
 const normalizeNodeId = (id: string) => {
-  // 末尾の拡張子を削除
   const withoutExt = id.replace(/\.[^/.]+$/, '');
-  // index.vueなどの場合はディレクトリ名のみにする
   return withoutExt.replace(/\/index$/, '');
 };
 
@@ -121,130 +74,22 @@ export interface DependencyGraphViewerProps {
   focusNodeId: string;
 }
 
-// 依存関係の重みを計算するインターフェースとヘルパー関数
-interface NodeWeight {
-  level: number;
-  weight: number;
-  directDependencies: Set<string>;
-  allDependencies: Set<string>;
-  dependencyDepth: number; // 依存の深さ
-  dependentDepth: number; // 被依存の深さ
-  group?: string; // サブグループ識別子
-}
 
-const calculateNodeWeights = (
-  nodes: any[],
-  edges: any[],
-  focusNodeId: string
-): Map<string, NodeWeight> => {
-  const weights = new Map<string, NodeWeight>();
-
-  // 初期化
-  nodes.forEach((node) => {
-    weights.set(node.id, {
-      level: 0,
-      weight: 0,
-      directDependencies: new Set<string>(),
-      allDependencies: new Set<string>(),
-      dependencyDepth: 0,
-      dependentDepth: 0,
-    });
-  });
-
-  // 直接の依存関係を記録
-  edges.forEach((edge) => {
-    const sourceWeight = weights.get(edge.source);
-    const targetWeight = weights.get(edge.target);
-    if (sourceWeight && targetWeight) {
-      sourceWeight.directDependencies.add(edge.target);
-    }
-  });
-
-  // 依存の深さを計算
-  const calculateDependencyDepth = (nodeId: string, visited: Set<string>, depth: number) => {
-    const weight = weights.get(nodeId);
-    if (!weight || visited.has(nodeId)) return depth;
-
-    visited.add(nodeId);
-    weight.dependencyDepth = Math.max(weight.dependencyDepth, depth);
-
-    let maxChildDepth = depth;
-    weight.directDependencies.forEach((depId) => {
-      const childDepth = calculateDependencyDepth(depId, new Set(visited), depth + 1);
-      maxChildDepth = Math.max(maxChildDepth, childDepth);
-    });
-
-    return maxChildDepth;
-  };
-
-  // 被依存の深さを計算
-  const calculateDependentDepth = (nodeId: string, visited: Set<string>, depth: number) => {
-    const weight = weights.get(nodeId);
-    if (!weight || visited.has(nodeId)) return depth;
-
-    visited.add(nodeId);
-    weight.dependentDepth = Math.max(weight.dependentDepth, depth);
-
-    let maxParentDepth = depth;
-    edges.forEach((edge) => {
-      if (edge.target === nodeId && !visited.has(edge.source)) {
-        const parentDepth = calculateDependentDepth(edge.source, new Set(visited), depth + 1);
-        maxParentDepth = Math.max(maxParentDepth, parentDepth);
-      }
-    });
-
-    return maxParentDepth;
-  };
-
-  // 深さの計算を実行
-  calculateDependencyDepth(focusNodeId, new Set(), 0);
-  calculateDependentDepth(focusNodeId, new Set(), 0);
-
-  // グループの割り当て
-  const assignGroups = () => {
-    const groups = new Map<string, Set<string>>();
-
-    nodes.forEach((node) => {
-      const weight = weights.get(node.id);
-      if (!weight) return;
-
-      // 依存関係の方向性に基づいてグループを決定
-      const groupKey = `${weight.dependencyDepth}-${weight.dependentDepth}`;
-      if (!groups.has(groupKey)) {
-        groups.set(groupKey, new Set());
-      }
-      groups.get(groupKey)?.add(node.id);
-      weight.group = groupKey;
-    });
-
-    return groups;
-  };
-
-  const groups = assignGroups();
-
-  return weights;
-};
-
-// Calculate node levels with focus node at center, dependencies on left, dependents on right
 const calculateDirectionalLevels = (nodes: any[], edges: any[], focusNodeId: string): Map<string, number> => {
   const levels = new Map<string, number>();
   
-  // Initialize all nodes with a placeholder level
   nodes.forEach(node => {
     levels.set(node.id, 0);
   });
   
-  // Focus node is at center (level 0)
   levels.set(focusNodeId, 0);
   
-  // BFS for dependencies (going left, negative levels)
   const dependencyQueue: { id: string; level: number }[] = [{ id: focusNodeId, level: 0 }];
   const dependencyVisited = new Set<string>([focusNodeId]);
   
   while (dependencyQueue.length > 0) {
     const { id, level } = dependencyQueue.shift()!;
     
-    // Find nodes that this node depends on (this node imports them)
     edges.forEach(edge => {
       if (edge.source === id && !dependencyVisited.has(edge.target)) {
         dependencyVisited.add(edge.target);
@@ -258,14 +103,12 @@ const calculateDirectionalLevels = (nodes: any[], edges: any[], focusNodeId: str
     });
   }
   
-  // BFS for dependents (going right, positive levels)
   const dependentQueue: { id: string; level: number }[] = [{ id: focusNodeId, level: 0 }];
   const dependentVisited = new Set<string>([focusNodeId]);
   
   while (dependentQueue.length > 0) {
     const { id, level } = dependentQueue.shift()!;
     
-    // Find nodes that depend on this node (they import this node)
     edges.forEach(edge => {
       if (edge.target === id && !dependentVisited.has(edge.source)) {
         dependentVisited.add(edge.source);
@@ -279,14 +122,12 @@ const calculateDirectionalLevels = (nodes: any[], edges: any[], focusNodeId: str
     });
   }
   
-  // Normalize levels to be non-negative (shift all levels to the right)
   const minLevel = Math.min(...Array.from(levels.values()).filter(l => l !== undefined));
   nodes.forEach(node => {
     const level = levels.get(node.id);
     if (level !== undefined) {
       levels.set(node.id, level - minLevel);
     } else {
-      // Unconnected nodes get placed at the far right
       levels.set(node.id, 999);
     }
   });
@@ -295,42 +136,23 @@ const calculateDirectionalLevels = (nodes: any[], edges: any[], focusNodeId: str
 };
 
 const getLayoutedElements = (nodes: any[], edges: any[], focusNodeId: string) => {
-  // Create a new dagre graph
   const dagreGraph = new dagre.graphlib.Graph();
   dagreGraph.setDefaultEdgeLabel(() => ({}));
   
-  // Set graph layout options
   dagreGraph.setGraph({
-    rankdir: 'LR', // Left to Right layout for dependency flow
-    align: undefined, // Remove alignment to avoid staircase effect
-    nodesep: 50, // Vertical separation between nodes
-    ranksep: 150, // Horizontal separation between ranks
-    edgesep: 25, // Separation between edges
+    rankdir: 'LR',
+    align: undefined,
+    nodesep: 50,
+    ranksep: 150,
+    edgesep: 25,
     marginx: 50,
     marginy: 50,
-    ranker: 'network-simplex', // Better algorithm for complex graphs
+    ranker: 'network-simplex',
   });
 
-  // Calculate node levels with directional flow from focus node
   const nodeLevels = calculateDirectionalLevels(nodes, edges, focusNodeId);
 
-  // Group nodes by their path structure (e.g., components/atoms, components/molecules)
-  const nodeGroups = new Map<string, string[]>();
-  nodes.forEach(node => {
-    const pathParts = node.id.split('/');
-    if (pathParts.length >= 2) {
-      // Group by first two levels of path (e.g., "components/atoms")
-      const groupKey = pathParts.slice(0, 2).join('/');
-      if (!nodeGroups.has(groupKey)) {
-        nodeGroups.set(groupKey, []);
-      }
-      nodeGroups.get(groupKey)?.push(node.id);
-    }
-  });
-
-  // Add nodes to the graph with rank constraints
   nodes.forEach((node) => {
-    // Estimate node dimensions based on label length
     const labelLength = node.data.label.length;
     const width = Math.max(150, labelLength * 8);
     const height = 50;
@@ -341,7 +163,6 @@ const getLayoutedElements = (nodes: any[], edges: any[], focusNodeId: string) =>
       label: node.data.label,
     };
 
-    // Set rank if we have a level for this node
     const level = nodeLevels.get(node.id);
     if (level !== undefined) {
       nodeData.rank = level;
@@ -350,22 +171,12 @@ const getLayoutedElements = (nodes: any[], edges: any[], focusNodeId: string) =>
     dagreGraph.setNode(node.id, nodeData);
   });
 
-  // Remove invisible edges for now to avoid staircase effect
-
-  // Add edges to the graph
   edges.forEach((edge) => {
     dagreGraph.setEdge(edge.source, edge.target);
   });
 
-  // Run the layout algorithm
   dagre.layout(dagreGraph);
 
-  // Get the graph dimensions for centering
-  const graphInfo = dagreGraph.graph();
-  const graphWidth = graphInfo.width || 800;
-  const graphHeight = graphInfo.height || 600;
-
-  // Apply the calculated positions to nodes
   const layoutedNodes = nodes.map((node) => {
     const nodeWithPosition = dagreGraph.node(node.id);
     const nodeWidth = nodeWithPosition.width;
@@ -374,7 +185,6 @@ const getLayoutedElements = (nodes: any[], edges: any[], focusNodeId: string) =>
     return {
       ...node,
       position: {
-        // dagre gives center positions, React Flow needs top-left
         x: nodeWithPosition.x - nodeWidth / 2,
         y: nodeWithPosition.y - nodeHeight / 2,
       },
@@ -383,7 +193,6 @@ const getLayoutedElements = (nodes: any[], edges: any[], focusNodeId: string) =>
       targetPosition: Position.Left,
       style: {
         ...node.style,
-        // Highlight the focused node
         ...(node.id === focusNodeId ? { 
           boxShadow: '0 0 12px 4px rgba(66, 184, 131, 0.4)',
           border: '2px solid #42b883',
@@ -392,7 +201,6 @@ const getLayoutedElements = (nodes: any[], edges: any[], focusNodeId: string) =>
     };
   });
 
-  // Style edges based on their relationship to the focused node
   const layoutedEdges = edges.map((edge) => {
     const isDirectlyConnected = edge.source === focusNodeId || edge.target === focusNodeId;
     
@@ -411,17 +219,14 @@ const getLayoutedElements = (nodes: any[], edges: any[], focusNodeId: string) =>
   return { nodes: layoutedNodes, edges: layoutedEdges };
 };
 
-// Extract focus-centric dependency paths only
 function extractDependencySubgraph(graph: DependencyGraph, focusNodeId: string, expandedNodes: Set<string>) {
   const relevantNodes = new Set<string>();
   const relevantEdges = new Set<string>();
   const nodeMetadata = new Map<string, { isTerminal: boolean; isExpandable: boolean }>();
   
-  // Helper to check if node has dependencies in given direction
   const hasParents = (nodeId: string) => Array.from(graph.edges).some(edge => edge.to === nodeId);
   const hasChildren = (nodeId: string) => Array.from(graph.edges).some(edge => edge.from === nodeId);
   
-  // Map focus node's direct relationships
   const focusParents = new Set<string>();
   const focusChildren = new Set<string>();
   
@@ -434,17 +239,14 @@ function extractDependencySubgraph(graph: DependencyGraph, focusNodeId: string, 
     }
   });
   
-  // Always include focus node
   relevantNodes.add(focusNodeId);
   nodeMetadata.set(focusNodeId, {
     isTerminal: false,
     isExpandable: focusParents.size > 0 || focusChildren.size > 0
   });
   
-  // Process expanded nodes
   expandedNodes.forEach(nodeId => {
     if (nodeId === focusNodeId) {
-      // Focus node expanded: show direct parents and children
       focusParents.forEach(parent => {
         relevantNodes.add(parent);
         relevantEdges.add(`${parent}-${focusNodeId}`);
@@ -462,7 +264,6 @@ function extractDependencySubgraph(graph: DependencyGraph, focusNodeId: string, 
         });
       });
     } else if (focusParents.has(nodeId)) {
-      // Parent expanded: show its parents + connection to focus
       relevantNodes.add(nodeId);
       relevantEdges.add(`${nodeId}-${focusNodeId}`);
       let hasGrandparents = false;
@@ -482,7 +283,6 @@ function extractDependencySubgraph(graph: DependencyGraph, focusNodeId: string, 
         isExpandable: hasGrandparents
       });
     } else if (focusChildren.has(nodeId)) {
-      // Child expanded: show its children + connection to focus
       relevantNodes.add(nodeId);
       relevantEdges.add(`${focusNodeId}-${nodeId}`);
       let hasGrandchildren = false;
@@ -542,14 +342,12 @@ function extractDependencySubgraph(graph: DependencyGraph, focusNodeId: string, 
   return { nodes, edges, nodeMetadata };
 }
 
-// カスタムノードコンポーネント
 const CustomNode = ({ data }: { data: any }) => {
   const { label, info } = data;
   const scriptType = info?.scriptType;
   const scriptLang = info?.scriptLang;
   const nodeType = info?.type;
 
-  // APIタイプのバッジを作成
   const getApiBadge = () => {
     if (nodeType !== 'vue' || !scriptType || scriptType === 'unknown') return null;
     
@@ -564,7 +362,6 @@ const CustomNode = ({ data }: { data: any }) => {
 
     const badges = [];
     
-    // APIタイプバッジ
     if (scriptType === 'composition') {
       badges.push(
         <span key="api" style={{ ...badgeStyle, backgroundColor: '#00BD7E', color: '#fff' }}>
@@ -591,7 +388,6 @@ const CustomNode = ({ data }: { data: any }) => {
       );
     }
     
-    // 言語バッジ
     if (scriptLang === 'ts') {
       badges.push(
         <span key="lang" style={{ ...badgeStyle, backgroundColor: '#3178c6', color: '#fff' }}>
@@ -619,7 +415,6 @@ const nodeTypes = {
   definition: CustomNode,
 };
 
-// ReactFlowを使用するコンポーネント
 function DependencyGraphViewerInner({ graph, focusNodeId }: DependencyGraphViewerProps) {
   const [nodes, setNodes] = React.useState<any[]>([]);
   const [edges, setEdges] = React.useState<any[]>([]);
@@ -644,7 +439,6 @@ function DependencyGraphViewerInner({ graph, focusNodeId }: DependencyGraphViewe
     const nodeId = Array.from(graph.nodes.values()).find((n: DependencyNode) => n.relativePath === node.id)?.id;
     if (!nodeId) return;
     
-    // Don't expand terminal nodes
     if (node.data.metadata?.isTerminal) return;
     
     setExpandedNodes(prev => {
@@ -658,7 +452,6 @@ function DependencyGraphViewerInner({ graph, focusNodeId }: DependencyGraphViewe
     });
   }, [graph]);
 
-  // Separate effect to manage expanded nodes when focus changes
   React.useEffect(() => {
     setExpandedNodes(prev => {
       const newExpanded = new Set(prev);
@@ -704,7 +497,6 @@ function DependencyGraphViewerInner({ graph, focusNodeId }: DependencyGraphViewe
     setNodes(layoutedNodes);
     setEdges(layoutedEdges);
 
-    // Simple fitView after layout
     setTimeout(() => {
       fitView({
         padding: 0.1,
@@ -805,29 +597,29 @@ function DependencyGraphViewerInner({ graph, focusNodeId }: DependencyGraphViewe
           }}
         >
           <div>
-            <strong>パス:</strong> {hoveredNode}
+            <strong>Path:</strong> {hoveredNode}
           </div>
           <div>
-            <strong>タイプ:</strong> {nodes.find((n) => n.id === hoveredNode)?.data?.info?.type}
+            <strong>Type:</strong> {nodes.find((n) => n.id === hoveredNode)?.data?.info?.type}
           </div>
           {nodes.find((n) => n.id === hoveredNode)?.data?.info?.type === 'vue' && (
             <>
               <div>
-                <strong>API スタイル:</strong>{' '}
+                <strong>API Style:</strong>{' '}
                 {nodes.find((n) => n.id === hoveredNode)?.data?.info?.scriptType || 'Options API'}
               </div>
               <div>
-                <strong>言語:</strong>{' '}
+                <strong>Language:</strong>{' '}
                 {nodes.find((n) => n.id === hoveredNode)?.data?.info?.scriptLang || 'js'}
               </div>
             </>
           )}
           <div>
-            <strong>依存数:</strong>{' '}
+            <strong>Dependencies:</strong>{' '}
             {nodes.find((n) => n.id === hoveredNode)?.data?.info?.dependencies || 0}
           </div>
           <div>
-            <strong>被依存数:</strong>{' '}
+            <strong>Dependents:</strong>{' '}
             {nodes.find((n) => n.id === hoveredNode)?.data?.info?.dependents || 0}
           </div>
         </div>
@@ -836,7 +628,6 @@ function DependencyGraphViewerInner({ graph, focusNodeId }: DependencyGraphViewe
   );
 }
 
-// メインのエクスポートコンポーネント
 export function DependencyGraphViewer(props: DependencyGraphViewerProps) {
   return (
     <div className="w-full h-full">

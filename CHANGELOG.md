@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.13] - 2025-07-04
+
+### Fixed
+- Fixed missing visualizer assets error in published npm package
+  - Removed incorrect dependency on local assets directory
+  - CLI now correctly reads from node_modules/@voyager-vue/ui/dist/template.html
+  - Based on v0.0.11 (v0.0.12 was a recovery release from accidental unpublishing)
+
 ## [0.0.12] - 2025-07-04
 
 ### Fixed

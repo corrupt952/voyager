@@ -1,6 +1,6 @@
 {
   "name": "@voyager-vue/cli",
-  "version": "0.0.11",
+  "version": "0.0.13",
   "description": "Vue component dependency visualization CLI tool",
   "type": "module",
   "bin": {

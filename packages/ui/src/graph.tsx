@@ -58,7 +58,7 @@ const nodeTypeMap = {
 } as const;
 
 // ノードスタイルの定義
-const getNodeStyle = (type: string, isSelected: boolean) => {
+const getNodeStyle = (type: string, isSelected: boolean, isExpanded: boolean = false) => {
   const baseStyle = {
     padding: '4px',
     borderRadius: '3px',
@@ -93,10 +93,18 @@ const getNodeStyle = (type: string, isSelected: boolean) => {
       }
     : {};
 
+  const expandedStyle = isExpanded && !isSelected
+    ? {
+        border: '2px solid #4CAF50',
+        boxShadow: '0 0 4px 1px rgba(76, 175, 80, 0.3)',
+      }
+    : {};
+
   return {
     ...baseStyle,
     ...typeStyle,
     ...selectedStyle,
+    ...expandedStyle,
   };
 };
 
@@ -403,48 +411,114 @@ const getLayoutedElements = (nodes: any[], edges: any[], focusNodeId: string) =>
   return { nodes: layoutedNodes, edges: layoutedEdges };
 };
 
-// 選択されたノードの依存関係を抽出する関数
-function extractDependencySubgraph(graph: DependencyGraph, focusNodeId: string) {
+// Extract focus-centric dependency paths only
+function extractDependencySubgraph(graph: DependencyGraph, focusNodeId: string, expandedNodes: Set<string>) {
   const relevantNodes = new Set<string>();
   const relevantEdges = new Set<string>();
-
-  function traverse(nodeId: string, direction: 'parent' | 'child', visited: Set<string>) {
-    if (visited.has(nodeId)) return;
-    visited.add(nodeId);
-    relevantNodes.add(nodeId);
-
-    if (direction === 'parent') {
-      Array.from(graph.edges).forEach((edge: DependencyEdge) => {
+  const nodeMetadata = new Map<string, { isTerminal: boolean; isExpandable: boolean }>();
+  
+  // Helper to check if node has dependencies in given direction
+  const hasParents = (nodeId: string) => Array.from(graph.edges).some(edge => edge.to === nodeId);
+  const hasChildren = (nodeId: string) => Array.from(graph.edges).some(edge => edge.from === nodeId);
+  
+  // Map focus node's direct relationships
+  const focusParents = new Set<string>();
+  const focusChildren = new Set<string>();
+  
+  Array.from(graph.edges).forEach(edge => {
+    if (edge.to === focusNodeId) {
+      focusParents.add(edge.from);
+    }
+    if (edge.from === focusNodeId) {
+      focusChildren.add(edge.to);
+    }
+  });
+  
+  // Always include focus node
+  relevantNodes.add(focusNodeId);
+  nodeMetadata.set(focusNodeId, {
+    isTerminal: false,
+    isExpandable: focusParents.size > 0 || focusChildren.size > 0
+  });
+  
+  // Process expanded nodes
+  expandedNodes.forEach(nodeId => {
+    if (nodeId === focusNodeId) {
+      // Focus node expanded: show direct parents and children
+      focusParents.forEach(parent => {
+        relevantNodes.add(parent);
+        relevantEdges.add(`${parent}-${focusNodeId}`);
+        nodeMetadata.set(parent, {
+          isTerminal: !hasParents(parent),
+          isExpandable: hasParents(parent)
+        });
+      });
+      focusChildren.forEach(child => {
+        relevantNodes.add(child);
+        relevantEdges.add(`${focusNodeId}-${child}`);
+        nodeMetadata.set(child, {
+          isTerminal: !hasChildren(child),
+          isExpandable: hasChildren(child)
+        });
+      });
+    } else if (focusParents.has(nodeId)) {
+      // Parent expanded: show its parents + connection to focus
+      relevantNodes.add(nodeId);
+      relevantEdges.add(`${nodeId}-${focusNodeId}`);
+      let hasGrandparents = false;
+      Array.from(graph.edges).forEach(edge => {
         if (edge.to === nodeId) {
-          relevantEdges.add(`${edge.from}-${edge.to}`);
-          traverse(edge.from, 'parent', visited);
+          relevantNodes.add(edge.from);
+          relevantEdges.add(`${edge.from}-${nodeId}`);
+          hasGrandparents = true;
+          nodeMetadata.set(edge.from, {
+            isTerminal: !hasParents(edge.from),
+            isExpandable: hasParents(edge.from)
+          });
         }
       });
-    } else {
-      Array.from(graph.edges).forEach((edge: DependencyEdge) => {
+      nodeMetadata.set(nodeId, {
+        isTerminal: !hasGrandparents,
+        isExpandable: hasGrandparents
+      });
+    } else if (focusChildren.has(nodeId)) {
+      // Child expanded: show its children + connection to focus
+      relevantNodes.add(nodeId);
+      relevantEdges.add(`${focusNodeId}-${nodeId}`);
+      let hasGrandchildren = false;
+      Array.from(graph.edges).forEach(edge => {
         if (edge.from === nodeId) {
-          relevantEdges.add(`${edge.from}-${edge.to}`);
-          traverse(edge.to, 'child', visited);
+          relevantNodes.add(edge.to);
+          relevantEdges.add(`${nodeId}-${edge.to}`);
+          hasGrandchildren = true;
+          nodeMetadata.set(edge.to, {
+            isTerminal: !hasChildren(edge.to),
+            isExpandable: hasChildren(edge.to)
+          });
         }
+      });
+      nodeMetadata.set(nodeId, {
+        isTerminal: !hasGrandchildren,
+        isExpandable: hasGrandchildren
       });
     }
-  }
-
-  traverse(focusNodeId, 'parent', new Set<string>());
-  traverse(focusNodeId, 'child', new Set<string>());
+  });
 
   const nodes = Array.from(relevantNodes)
     .map((nodeId) => {
       const nodeData = Array.from(graph.nodes.values()).find((n: DependencyNode) => n.id === nodeId);
       if (!nodeData) return null;
 
+      const metadata = nodeMetadata.get(nodeId) || { isTerminal: false, isExpandable: true };
+
       return {
         id: nodeData.relativePath,
         data: {
           label: getNodeLabel(nodeData.relativePath),
+          metadata,
         },
         position: { x: 0, y: 0 },
-        style: getNodeStyle(nodeData.type, nodeId === focusNodeId),
+        style: getNodeStyle(nodeData.type, nodeId === focusNodeId, expandedNodes.has(nodeId)),
       };
     })
     .filter((node): node is NonNullable<typeof node> => node !== null);
@@ -465,7 +539,7 @@ function extractDependencySubgraph(graph: DependencyGraph, focusNodeId: string) 
     })
     .filter((edge): edge is NonNullable<typeof edge> => edge !== null);
 
-  return { nodes, edges };
+  return { nodes, edges, nodeMetadata };
 }
 
 // カスタムノードコンポーネント
@@ -550,6 +624,7 @@ function DependencyGraphViewerInner({ graph, focusNodeId }: DependencyGraphViewe
   const [nodes, setNodes] = React.useState<any[]>([]);
   const [edges, setEdges] = React.useState<any[]>([]);
   const [hoveredNode, setHoveredNode] = React.useState<string | null>(null);
+  const [expandedNodes, setExpandedNodes] = React.useState<Set<string>>(new Set([focusNodeId]));
   const { fitView } = useReactFlow();
 
   const onNodesChange = React.useCallback(
@@ -565,13 +640,32 @@ function DependencyGraphViewerInner({ graph, focusNodeId }: DependencyGraphViewe
     setHoveredNode(null);
   }, []);
 
+  const onNodeClick = React.useCallback((event: React.MouseEvent, node: any) => {
+    const nodeId = Array.from(graph.nodes.values()).find((n: DependencyNode) => n.relativePath === node.id)?.id;
+    if (!nodeId) return;
+    
+    // Don't expand terminal nodes
+    if (node.data.metadata?.isTerminal) return;
+    
+    setExpandedNodes(prev => {
+      const newExpanded = new Set(prev);
+      if (newExpanded.has(nodeId)) {
+        newExpanded.delete(nodeId);
+      } else {
+        newExpanded.add(nodeId);
+      }
+      return newExpanded;
+    });
+  }, [graph]);
+
   React.useEffect(() => {
     const focusNode = Array.from(graph.nodes.values()).find((n: DependencyNode) => n.id === focusNodeId);
     if (!focusNode) return;
 
-    const { nodes: initialNodes, edges: initialEdges } = extractDependencySubgraph(
+    const { nodes: initialNodes, edges: initialEdges, nodeMetadata } = extractDependencySubgraph(
       graph,
-      focusNodeId
+      focusNodeId,
+      expandedNodes
     );
 
     const enhancedNodes = initialNodes.map((node) => {
@@ -610,7 +704,7 @@ function DependencyGraphViewerInner({ graph, focusNodeId }: DependencyGraphViewe
         maxZoom: 2,
       });
     }, 100);
-  }, [graph, focusNodeId, fitView]);
+  }, [graph, focusNodeId, expandedNodes, fitView]);
 
   return (
     <div className="w-full h-full relative">
@@ -618,6 +712,7 @@ function DependencyGraphViewerInner({ graph, focusNodeId }: DependencyGraphViewe
         nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}
+        onNodeClick={onNodeClick}
         onNodeMouseEnter={onNodeMouseEnter}
         onNodeMouseLeave={onNodeMouseLeave}
         nodeTypes={nodeTypes}

@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.10] - 2025-07-04
+
+### Fixed
+- Use relative paths instead of absolute paths for tree view root in component selector
+  - Tree view now correctly shows project structure from working directory
+  - Removed unnecessary system paths like /Users from the tree hierarchy
+
 ## [0.0.9] - 2025-07-04
 
 ### Added

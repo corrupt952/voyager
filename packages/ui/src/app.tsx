@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { DependencyGraphViewer } from './graph';
 import { ComponentSelector } from './component-selector';
 import '@xyflow/react/dist/style.css';
+import './tailwind.css';
 import { DependencyGraph, DependencyNode } from '@voyager-vue/core';
 
 // グローバル変数からグラフデータを取得
@@ -55,7 +56,7 @@ function App() {
   };
 
   return (
-    <div style={{ display: 'flex', width: '100%', height: '100%' }}>
+    <div className="flex w-full h-full">
       <div style={{ width: '280px', borderRight: '1px solid #dee2e6' }}>
         <ComponentSelector
           nodes={graphData.nodes}

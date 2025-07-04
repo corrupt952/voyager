@@ -46,6 +46,7 @@
     "@xyflow/react": "^12.0.0"
   },
   "devDependencies": {
+    "@tailwindcss/vite": "^4.1.11",
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
     "@typescript-eslint/eslint-plugin": "^8.24.1",
@@ -54,6 +55,7 @@
     "eslint": "^9.20.1",
     "eslint-config-prettier": "^10.0.1",
     "prettier": "^3.5.1",
+    "tailwindcss": "^4.1.11",
     "typescript": "^5.7.3",
     "vite": "^5.0.12",
     "vite-plugin-dts": "^3.7.3",

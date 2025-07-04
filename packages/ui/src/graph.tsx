@@ -12,7 +12,6 @@ import {
 import dagre from '@dagrejs/dagre';
 import { DependencyGraph, DependencyNode, DependencyEdge } from '@voyager-vue/core';
 import { getNodeLabel } from './utils';
-import '@xyflow/react/dist/style.css';
 
 // デフォルトのスタイル
 const defaultNodeStyle = {
@@ -604,12 +603,17 @@ function DependencyGraphViewerInner({ graph, focusNodeId }: DependencyGraphViewe
 
     // Simple fitView after layout
     setTimeout(() => {
-      fitView();
+      fitView({
+        padding: 0.1,
+        includeHiddenNodes: false,
+        minZoom: 0.1,
+        maxZoom: 2,
+      });
     }, 100);
   }, [graph, focusNodeId, fitView]);
 
   return (
-    <>
+    <div className="w-full h-full relative">
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -617,10 +621,15 @@ function DependencyGraphViewerInner({ graph, focusNodeId }: DependencyGraphViewe
         onNodeMouseEnter={onNodeMouseEnter}
         onNodeMouseLeave={onNodeMouseLeave}
         nodeTypes={nodeTypes}
-        fitView
+        fitView={true}
         fitViewOptions={{
-          padding: 0.2,
+          padding: 0.1,
+          includeHiddenNodes: false,
+          minZoom: 0.1,
+          maxZoom: 2,
         }}
+        minZoom={0.1}
+        maxZoom={2}
         nodesDraggable={true}
         nodesConnectable={false}
         elementsSelectable={true}
@@ -719,14 +728,14 @@ function DependencyGraphViewerInner({ graph, focusNodeId }: DependencyGraphViewe
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }
 
 // メインのエクスポートコンポーネント
 export function DependencyGraphViewer(props: DependencyGraphViewerProps) {
   return (
-    <div style={{ width: '100%', height: '100%' }}>
+    <div className="w-full h-full">
       <ReactFlowProvider>
         <DependencyGraphViewerInner {...props} />
       </ReactFlowProvider>

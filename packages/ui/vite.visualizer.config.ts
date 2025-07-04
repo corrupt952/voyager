@@ -13,6 +13,10 @@ export default defineConfig({
       closeBundle: async () => {
         const js = readFileSync(resolve(__dirname, 'dist/visualizer/visualizer.iife.js'), 'utf-8');
         const css = readFileSync(resolve(__dirname, 'dist/visualizer/style.css'), 'utf-8');
+        const reactFlowBase = readFileSync(
+          resolve(__dirname, 'node_modules/@xyflow/react/dist/base.css'),
+          'utf-8'
+        );
 
         const template = `<!DOCTYPE html>
 <html lang="en">
@@ -21,7 +25,10 @@ export default defineConfig({
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Vue Component Dependencies</title>
   <style>
-    /* === Tailwind CSS & ReactFlow Styles === */
+    /* === React Flow Base Styles === */
+    ${reactFlowBase}
+    
+    /* === Tailwind CSS & Custom Styles === */
     ${css}
   </style>
 </head>

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { DependencyGraphViewer } from './graph';
 import { ComponentSelector } from './component-selector';
-import '@xyflow/react/dist/style.css';
 import './tailwind.css';
 import { DependencyGraph, DependencyNode } from '@voyager-vue/core';
 
@@ -56,15 +55,15 @@ function App() {
   };
 
   return (
-    <div className="flex w-full h-full">
-      <div className="w-[280px] border-r border-gray-300">
+    <div className="flex w-full h-full overflow-hidden">
+      <div className="w-[280px] h-full border-r border-gray-300 overflow-hidden">
         <ComponentSelector
           nodes={graphData.nodes}
           onSelect={handleNodeSelect}
           selectedNodeId={selectedNodeId}
         />
       </div>
-      <div className="flex-1">
+      <div className="flex-1 h-full overflow-hidden">
         {selectedNodeId ? (
           <DependencyGraphViewer graph={graphData} focusNodeId={selectedNodeId} />
         ) : (

@@ -1,5 +1,14 @@
 @import "tailwindcss";
 
+/* グローバルスタイル */
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
 /* React Flow競合防止 */
 .react-flow__renderer {
   z-index: 4 !important;
@@ -11,4 +20,22 @@
 
 .react-flow__background {
   z-index: -1 !important;
+}
+
+/* SVGエッジ表示の修正 */
+.react-flow__edges svg {
+  overflow: visible !important;
+}
+
+.react-flow__edge {
+  pointer-events: visibleStroke !important;
+}
+
+/* Tailwind Preflightとの競合を防ぐ */
+.react-flow__node {
+  box-sizing: border-box !important;
+}
+
+.react-flow__handle {
+  box-sizing: border-box !important;
 }

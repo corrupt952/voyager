@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.7] - 2025-01-04
+
+### Added
+- Vue API type visualization and filtering for better component analysis
+- Enhanced Vue API detection with comprehensive pattern matching
+
 ## [0.0.6] - 2025-07-03
 
 ### Added

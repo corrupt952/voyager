@@ -6,7 +6,7 @@ export type FileType = 'vue' | 'script' | 'definition';
 /**
  * Vueコンポーネントのスクリプトタイプ
  */
-export type ScriptType = 'composition' | 'options' | 'unknown';
+export type ScriptType = 'composition' | 'options' | 'mixed' | 'functional' | 'class' | 'unknown';
 
 /**
  * スクリプト言語の種別

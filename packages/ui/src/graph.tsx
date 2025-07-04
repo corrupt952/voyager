@@ -658,6 +658,15 @@ function DependencyGraphViewerInner({ graph, focusNodeId }: DependencyGraphViewe
     });
   }, [graph]);
 
+  // Separate effect to manage expanded nodes when focus changes
+  React.useEffect(() => {
+    setExpandedNodes(prev => {
+      const newExpanded = new Set(prev);
+      newExpanded.add(focusNodeId);
+      return newExpanded;
+    });
+  }, [focusNodeId]);
+
   React.useEffect(() => {
     const focusNode = Array.from(graph.nodes.values()).find((n: DependencyNode) => n.id === focusNodeId);
     if (!focusNode) return;

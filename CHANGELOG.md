@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.0.9] - 2025-07-04
+
+### Added
+- Integrated Tailwind CSS v4 for modern styling with Vite plugin
+- React Flow base styles separation for better CSS management
+- Overflow handling and layout constraints for proper component display
+
+### Changed
+- Replaced all inline styles with Tailwind CSS utility classes
+- Updated React Flow CSS import from style.css to base.css
+- Refactored component styles for better maintainability
+
+### Fixed
+- React Flow component display issues with proper height constraints
+- TypeScript compilation errors with invalid scriptSetup type references
+- Layout overflow issues in sidebar and main content areas
+- SVG edge visibility and pointer events in React Flow
+
 ## [0.0.8] - 2025-01-04
 
 ### Added

@@ -1,7 +1,7 @@
 {
   "name": "voyager",
   "packageManager": "pnpm@9.1.0",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "description": "Vue component dependency visualization tool",
   "main": "dist/index.js",
   "bin": {

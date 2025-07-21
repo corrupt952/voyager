@@ -31,7 +31,7 @@ importers:
         version: 3.3.3
       inquirer:
         specifier: ^12.4.2
-        version: 12.8.0(@types/node@22.16.5)
+        version: 12.8.2(@types/node@22.16.5)
       ora:
         specifier: ^8.2.0
         version: 8.2.0
@@ -675,8 +675,8 @@ packages:
       '@types/node':
         optional: true
 
-  '@inquirer/prompts@7.7.0':
-    resolution: {integrity: sha512-8/7fOJA/Q5qqxznIvYjEvUCeRE6pncc1OHEmeA5JdNIKfOBC3a0EE5lFBofTWK/WXKfsjMkIz28y/uL6A3frYA==}
+  '@inquirer/prompts@7.7.1':
+    resolution: {integrity: sha512-XDxPrEWeWUBy8scAXzXuFY45r/q49R0g72bUzgQXZ1DY/xEFX+ESDMkTQolcb5jRBzaNJX2W8XQl6krMNDTjaA==}
     engines: {node: '>=18'}
     peerDependencies:
       '@types/node': '>=18'
@@ -702,8 +702,8 @@ packages:
       '@types/node':
         optional: true
 
-  '@inquirer/select@4.3.0':
-    resolution: {integrity: sha512-dY4sPBAfGH6Cv435gOSbNbMsLd6v1ItNmhjsLY+LTY4h8L+SAOERL2L/VtvjZFSVpVcY4dcu8fo6Uq8H8vNvzQ==}
+  '@inquirer/select@4.3.1':
+    resolution: {integrity: sha512-Gfl/5sqOF5vS/LIrSndFgOh7jgoe0UXEizDqahFRkq5aJBLegZ6WjuMh/hVEJwlFQjyLq1z9fRtvUMkb7jM1LA==}
     engines: {node: '>=18'}
     peerDependencies:
       '@types/node': '>=18'
@@ -757,46 +757,6 @@ packages:
   '@nodelib/fs.walk@1.2.8':
     resolution: {integrity: sha512-oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg==}
     engines: {node: '>= 8'}
-
-  '@oxlint/darwin-arm64@1.7.0':
-    resolution: {integrity: sha512-51vhCSQO4NSkedwEwOyqThiYqV0DAUkwNdqMQK0d29j5zmtNJJJRRBLeQuLGdstNmn3F7WMQ75Ci0/3Nq4ff8A==}
-    cpu: [arm64]
-    os: [darwin]
-
-  '@oxlint/darwin-x64@1.7.0':
-    resolution: {integrity: sha512-c0GN52yehYZ4TYuh4lBH9wYbBOI/RDOxZhJdBsttG0GwfvKYg/tiPNrNEsPzu0/rd1j6x3yT0zt6vezDMeC1sQ==}
-    cpu: [x64]
-    os: [darwin]
-
-  '@oxlint/linux-arm64-gnu@1.7.0':
-    resolution: {integrity: sha512-pam/lbzbzVMDzc3f1hoRPtnUMEIqkn0dynlB5nUll/MVBSIvIPLS9kJLrRA48lrlqbkS9LGiF37JvpwXA58A9A==}
-    cpu: [arm64]
-    os: [linux]
-
-  '@oxlint/linux-arm64-musl@1.7.0':
-    resolution: {integrity: sha512-LTyPy9FYS3SZ2XxJx+ITvlAq/ek5PtZK9Z2m3W72TA8hchGhJy5eQ+aotYjd/YVXOpGRpB12RdOpOTsZRu50bA==}
-    cpu: [arm64]
-    os: [linux]
-
-  '@oxlint/linux-x64-gnu@1.7.0':
-    resolution: {integrity: sha512-YtZ4DiAgjaEiqUiwnvtJ/znZMAAVPKR7pnsi6lqbA3BfXJ/IwMaNpdoGlCGVdDGeN4BuGCwnFtBVqKVvVg3DDg==}
-    cpu: [x64]
-    os: [linux]
-
-  '@oxlint/linux-x64-musl@1.7.0':
-    resolution: {integrity: sha512-5aIpemNUBvwMMk4MCx1V3M6R9eMB1/SS6/24Orax9FqaI1lDX08tySdv696sr4Lms9ocA+rotxIPW9NP9439vA==}
-    cpu: [x64]
-    os: [linux]
-
-  '@oxlint/win32-arm64@1.7.0':
-    resolution: {integrity: sha512-fpFpkHwbAu0NcR5bc1WapCPcM9qSYi5lCRVOp1WwDoFLKI2b9/UWB8OEg8UHWV5dnBu7HZAWH/SEslYGkZNsbQ==}
-    cpu: [arm64]
-    os: [win32]
-
-  '@oxlint/win32-x64@1.7.0':
-    resolution: {integrity: sha512-0EPWBWOiD3wZHgeWDlTUaiFzhzIonXykxYUC+NRerPQFkO/G+bd9uLMJddHDKqfP/7g8s3E5V6KvBvvFpb7U6g==}
-    cpu: [x64]
-    os: [win32]
 
   '@rolldown/pluginutils@1.0.0-beta.27':
     resolution: {integrity: sha512-+d0F4MKMCbeVUJwG96uQ4SgAznZNSq93I3V+9NHA4OpvqG8mRCpGdKmK8l/dl02h2CCDHwW2FqilnTyDcAnqjA==}
@@ -1552,8 +1512,8 @@ packages:
     resolution: {integrity: sha512-JmXMZ6wuvDmLiHEml9ykzqO6lwFbof0GG4IkcGaENdCRDDmMVnny7s5HsIgHCbaq0w2MyPhDqkhTUgS2LU2PHA==}
     engines: {node: '>=0.8.19'}
 
-  inquirer@12.8.0:
-    resolution: {integrity: sha512-gPBPq0MpYIBxYFNbJqvoYGw/n8sgmsgmN36MSQn0yocCnCg09cFlFLLd9CZ13zdAm6S8en4nttMbuD1UjWjW4Q==}
+  inquirer@12.8.2:
+    resolution: {integrity: sha512-oBDL9f4+cDambZVJdfJu2M5JQfvaug9lbo6fKDlFV40i8t3FGA1Db67ov5Hp5DInG4zmXhHWTSnlXBntnJ7GMA==}
     engines: {node: '>=18'}
     peerDependencies:
       '@types/node': '>=18'
@@ -1799,11 +1759,6 @@ packages:
     resolution: {integrity: sha512-D2FR03Vir7FIu45XBY20mTb+/ZSWB00sjU9jdQXt83gDrI4Ztz5Fs7/yy74g2N5SVQY4xY1qDr4rNddwYRVX0g==}
     engines: {node: '>=0.10.0'}
 
-  oxlint@1.7.0:
-    resolution: {integrity: sha512-krJN1fIRhs3xK1FyVyPtYIV9tkT4WDoIwI7eiMEKBuCjxqjQt5ZemQm1htPvHqNDOaWFRFt4btcwFdU8bbwgvA==}
-    engines: {node: '>=8.*'}
-    hasBin: true
-
   p-limit@3.1.0:
     resolution: {integrity: sha512-TYOanM3wGwNGsZN2cVTYPArw454xnXj5qmWF1bEoAc4+cU/ol7GVh7odevjp1FNHduHc3KZMcFduxU5Xc6uJRQ==}
     engines: {node: '>=10'}
@@ -1909,8 +1864,8 @@ packages:
     engines: {node: '>=18.0.0', npm: '>=8.0.0'}
     hasBin: true
 
-  run-async@4.0.4:
-    resolution: {integrity: sha512-2cgeRHnV11lSXBEhq7sN7a5UVjTKm9JTb9x8ApIT//16D7QL96AgnNeWSGoB4gIHc0iYw/Ha0Z+waBaCYZVNhg==}
+  run-async@4.0.5:
+    resolution: {integrity: sha512-oN9GTgxUNDBumHTTDmQ8dep6VIJbgj9S3dPP+9XylVLIK4xB9XTXtKWROd5pnhdXR9k0EgO1JRcNh0T+Ny2FsA==}
     engines: {node: '>=0.12.0'}
 
   run-parallel@1.2.0:
@@ -2682,7 +2637,7 @@ snapshots:
     optionalDependencies:
       '@types/node': 22.16.5
 
-  '@inquirer/prompts@7.7.0(@types/node@22.16.5)':
+  '@inquirer/prompts@7.7.1(@types/node@22.16.5)':
     dependencies:
       '@inquirer/checkbox': 4.2.0(@types/node@22.16.5)
       '@inquirer/confirm': 5.1.14(@types/node@22.16.5)
@@ -2693,7 +2648,7 @@ snapshots:
       '@inquirer/password': 4.0.17(@types/node@22.16.5)
       '@inquirer/rawlist': 4.1.5(@types/node@22.16.5)
       '@inquirer/search': 3.0.17(@types/node@22.16.5)
-      '@inquirer/select': 4.3.0(@types/node@22.16.5)
+      '@inquirer/select': 4.3.1(@types/node@22.16.5)
     optionalDependencies:
       '@types/node': 22.16.5
 
@@ -2714,7 +2669,7 @@ snapshots:
     optionalDependencies:
       '@types/node': 22.16.5
 
-  '@inquirer/select@4.3.0(@types/node@22.16.5)':
+  '@inquirer/select@4.3.1(@types/node@22.16.5)':
     dependencies:
       '@inquirer/core': 10.1.15(@types/node@22.16.5)
       '@inquirer/figures': 1.0.13
@@ -2788,30 +2743,6 @@ snapshots:
     dependencies:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.19.0
-
-  '@oxlint/darwin-arm64@1.7.0':
-    optional: true
-
-  '@oxlint/darwin-x64@1.7.0':
-    optional: true
-
-  '@oxlint/linux-arm64-gnu@1.7.0':
-    optional: true
-
-  '@oxlint/linux-arm64-musl@1.7.0':
-    optional: true
-
-  '@oxlint/linux-x64-gnu@1.7.0':
-    optional: true
-
-  '@oxlint/linux-x64-musl@1.7.0':
-    optional: true
-
-  '@oxlint/win32-arm64@1.7.0':
-    optional: true
-
-  '@oxlint/win32-x64@1.7.0':
-    optional: true
 
   '@rolldown/pluginutils@1.0.0-beta.27': {}
 
@@ -3646,14 +3577,14 @@ snapshots:
 
   imurmurhash@0.1.4: {}
 
-  inquirer@12.8.0(@types/node@22.16.5):
+  inquirer@12.8.2(@types/node@22.16.5):
     dependencies:
       '@inquirer/core': 10.1.15(@types/node@22.16.5)
-      '@inquirer/prompts': 7.7.0(@types/node@22.16.5)
+      '@inquirer/prompts': 7.7.1(@types/node@22.16.5)
       '@inquirer/type': 3.0.8(@types/node@22.16.5)
       ansi-escapes: 4.3.2
       mute-stream: 2.0.0
-      run-async: 4.0.4
+      run-async: 4.0.5
       rxjs: 7.8.2
     optionalDependencies:
       '@types/node': 22.16.5
@@ -3852,17 +3783,6 @@ snapshots:
 
   os-tmpdir@1.0.2: {}
 
-  oxlint@1.7.0:
-    optionalDependencies:
-      '@oxlint/darwin-arm64': 1.7.0
-      '@oxlint/darwin-x64': 1.7.0
-      '@oxlint/linux-arm64-gnu': 1.7.0
-      '@oxlint/linux-arm64-musl': 1.7.0
-      '@oxlint/linux-x64-gnu': 1.7.0
-      '@oxlint/linux-x64-musl': 1.7.0
-      '@oxlint/win32-arm64': 1.7.0
-      '@oxlint/win32-x64': 1.7.0
-
   p-limit@3.1.0:
     dependencies:
       yocto-queue: 0.1.0
@@ -3964,10 +3884,7 @@ snapshots:
       '@rollup/rollup-win32-x64-msvc': 4.44.1
       fsevents: 2.3.3
 
-  run-async@4.0.4:
-    dependencies:
-      oxlint: 1.7.0
-      prettier: 3.6.2
+  run-async@4.0.5: {}
 
   run-parallel@1.2.0:
     dependencies:

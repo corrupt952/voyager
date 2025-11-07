@@ -68,7 +68,7 @@ importers:
     dependencies:
       '@vue/compiler-sfc':
         specifier: ^3.5.13
-        version: 3.5.23
+        version: 3.5.24
       fast-glob:
         specifier: ^3.3.3
         version: 3.3.3
@@ -1174,17 +1174,17 @@ packages:
   '@volar/typescript@1.11.1':
     resolution: {integrity: sha512-iU+t2mas/4lYierSnoFOeRFQUhAEMgsFuQxoxvwn5EdQopw43j+J27a4lt9LMInx1gLJBC6qL14WYGlgymaSMQ==}
 
-  '@vue/compiler-core@3.5.23':
-    resolution: {integrity: sha512-nW7THWj5HOp085ROk65LwaoxuzDsjIxr485F4iu63BoxsXoSqKqmsUUoP4A7Gl67DgIgi0zJ8JFgHfvny/74MA==}
+  '@vue/compiler-core@3.5.24':
+    resolution: {integrity: sha512-eDl5H57AOpNakGNAkFDH+y7kTqrQpJkZFXhWZQGyx/5Wh7B1uQYvcWkvZi11BDhscPgj8N7XV3oRwiPnx1Vrig==}
 
-  '@vue/compiler-dom@3.5.23':
-    resolution: {integrity: sha512-AT8RMw0vEzzzO0JU5gY0F6iCzaWUIh/aaRVordzMBKXRpoTllTT4kocHDssByPsvodNCfump/Lkdow2mT/O5KQ==}
+  '@vue/compiler-dom@3.5.24':
+    resolution: {integrity: sha512-1QHGAvs53gXkWdd3ZMGYuvQFXHW4ksKWPG8HP8/2BscrbZ0brw183q2oNWjMrSWImYLHxHrx1ItBQr50I/q2zw==}
 
-  '@vue/compiler-sfc@3.5.23':
-    resolution: {integrity: sha512-3QTEUo4qg7FtQwaDJa8ou1CUikx5WTtZlY61rRRDu3lK2ZKrGoAGG8mvDgOpDsQ4A1bez9s+WtBB6DS2KuFCPw==}
+  '@vue/compiler-sfc@3.5.24':
+    resolution: {integrity: sha512-8EG5YPRgmTB+YxYBM3VXy8zHD9SWHUJLIGPhDovo3Z8VOgvP+O7UP5vl0J4BBPWYD9vxtBabzW1EuEZ+Cqs14g==}
 
-  '@vue/compiler-ssr@3.5.23':
-    resolution: {integrity: sha512-Hld2xphbMjXs9Q9WKxPf2EqmE+Rq/FEDnK/wUBtmYq74HCV4XDdSCheAaB823OQXIIFGq9ig/RbAZkF9s4U0Ow==}
+  '@vue/compiler-ssr@3.5.24':
+    resolution: {integrity: sha512-trOvMWNBMQ/odMRHW7Ae1CdfYx+7MuiQu62Jtu36gMLXcaoqKvAyh+P73sYG9ll+6jLB6QPovqoKGGZROzkFFg==}
 
   '@vue/language-core@1.8.27':
     resolution: {integrity: sha512-L8Kc27VdQserNaCUNiSFdDl9LWT24ly8Hpwf1ECy3aFb9m6bDhBGQYOujDm21N7EW3moKIOKEanQwe1q5BK+mA==}
@@ -1194,8 +1194,8 @@ packages:
       typescript:
         optional: true
 
-  '@vue/shared@3.5.23':
-    resolution: {integrity: sha512-0YZ1DYuC5o/YJPf6pFdt2KYxVGDxkDbH/1NYJnVJWUkzr8ituBEmFVQRNX2gCaAsFEjEDnLkWpgqlZA7htgS/g==}
+  '@vue/shared@3.5.24':
+    resolution: {integrity: sha512-9cwHL2EsJBdi8NY22pngYYWzkTDhld6fAD6jlaeloNGciNSJL6bLpbxVgXl96X00Jtc6YWQv96YA/0sxex/k1A==}
 
   '@xyflow/react@12.9.2':
     resolution: {integrity: sha512-Xr+LFcysHCCoc5KRHaw+FwbqbWYxp9tWtk1mshNcqy25OAPuaKzXSdqIMNOA82TIXF/gFKo0Wgpa6PU7wUUVqw==}
@@ -3259,42 +3259,42 @@ snapshots:
       '@volar/language-core': 1.11.1
       path-browserify: 1.0.1
 
-  '@vue/compiler-core@3.5.23':
+  '@vue/compiler-core@3.5.24':
     dependencies:
       '@babel/parser': 7.28.5
-      '@vue/shared': 3.5.23
+      '@vue/shared': 3.5.24
       entities: 4.5.0
       estree-walker: 2.0.2
       source-map-js: 1.2.1
 
-  '@vue/compiler-dom@3.5.23':
+  '@vue/compiler-dom@3.5.24':
     dependencies:
-      '@vue/compiler-core': 3.5.23
-      '@vue/shared': 3.5.23
+      '@vue/compiler-core': 3.5.24
+      '@vue/shared': 3.5.24
 
-  '@vue/compiler-sfc@3.5.23':
+  '@vue/compiler-sfc@3.5.24':
     dependencies:
       '@babel/parser': 7.28.5
-      '@vue/compiler-core': 3.5.23
-      '@vue/compiler-dom': 3.5.23
-      '@vue/compiler-ssr': 3.5.23
-      '@vue/shared': 3.5.23
+      '@vue/compiler-core': 3.5.24
+      '@vue/compiler-dom': 3.5.24
+      '@vue/compiler-ssr': 3.5.24
+      '@vue/shared': 3.5.24
       estree-walker: 2.0.2
       magic-string: 0.30.21
       postcss: 8.5.6
       source-map-js: 1.2.1
 
-  '@vue/compiler-ssr@3.5.23':
+  '@vue/compiler-ssr@3.5.24':
     dependencies:
-      '@vue/compiler-dom': 3.5.23
-      '@vue/shared': 3.5.23
+      '@vue/compiler-dom': 3.5.24
+      '@vue/shared': 3.5.24
 
   '@vue/language-core@1.8.27(typescript@5.9.3)':
     dependencies:
       '@volar/language-core': 1.11.1
       '@volar/source-map': 1.11.1
-      '@vue/compiler-dom': 3.5.23
-      '@vue/shared': 3.5.23
+      '@vue/compiler-dom': 3.5.24
+      '@vue/shared': 3.5.24
       computeds: 0.0.1
       minimatch: 9.0.5
       muggle-string: 0.3.1
@@ -3303,7 +3303,7 @@ snapshots:
     optionalDependencies:
       typescript: 5.9.3
 
-  '@vue/shared@3.5.23': {}
+  '@vue/shared@3.5.24': {}
 
   '@xyflow/react@12.9.2(@types/react@19.2.2)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)':
     dependencies:

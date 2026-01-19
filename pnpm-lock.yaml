@@ -108,7 +108,7 @@ importers:
         version: link:../core
       '@xyflow/react':
         specifier: ^12.0.0
-        version: 12.10.0(@types/react@19.2.7)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
+        version: 12.10.0(@types/react@19.2.8)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
       react:
         specifier: ^19.0.0
         version: 19.0.0
@@ -118,10 +118,10 @@ importers:
     devDependencies:
       '@types/react':
         specifier: ^19.0.10
-        version: 19.2.7
+        version: 19.2.8
       '@types/react-dom':
         specifier: ^19.0.4
-        version: 19.2.3(@types/react@19.2.7)
+        version: 19.2.3(@types/react@19.2.8)
       '@typescript-eslint/eslint-plugin':
         specifier: ^8.24.1
         version: 8.52.0(@typescript-eslint/parser@8.52.0(eslint@9.39.2)(typescript@5.9.3))(eslint@9.39.2)(typescript@5.9.3)
@@ -1273,8 +1273,8 @@ packages:
     peerDependencies:
       '@types/react': ^19.2.0
 
-  '@types/react@19.2.7':
-    resolution: {integrity: sha512-MWtvHrGZLFttgeEj28VXHxpmwYbor/ATPYbBfSFZEIRK0ecCFLl2Qo55z52Hss+UV9CRN7trSeq1zbgx7YDWWg==}
+  '@types/react@19.2.8':
+    resolution: {integrity: sha512-3MbSL37jEchWZz2p2mjntRZtPt837ij10ApxKfgmXCTuHWagYg7iA5bqPw6C8BMPfwidlvfPI/fxOc42HLhcyg==}
 
   '@typescript-eslint/eslint-plugin@8.52.0':
     resolution: {integrity: sha512-okqtOgqu2qmZJ5iN4TWlgfF171dZmx2FzdOv2K/ixL2LZWDStL8+JgQerI2sa8eAEfoydG9+0V96m7V+P8yE1Q==}
@@ -3431,11 +3431,11 @@ snapshots:
     dependencies:
       undici-types: 6.21.0
 
-  '@types/react-dom@19.2.3(@types/react@19.2.7)':
+  '@types/react-dom@19.2.3(@types/react@19.2.8)':
     dependencies:
-      '@types/react': 19.2.7
+      '@types/react': 19.2.8
 
-  '@types/react@19.2.7':
+  '@types/react@19.2.8':
     dependencies:
       csstype: 3.2.3
 
@@ -3643,13 +3643,13 @@ snapshots:
 
   '@vue/shared@3.5.26': {}
 
-  '@xyflow/react@12.10.0(@types/react@19.2.7)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)':
+  '@xyflow/react@12.10.0(@types/react@19.2.8)(react-dom@19.0.0(react@19.0.0))(react@19.0.0)':
     dependencies:
       '@xyflow/system': 0.0.74
       classcat: 5.0.5
       react: 19.0.0
       react-dom: 19.0.0(react@19.0.0)
-      zustand: 4.5.7(@types/react@19.2.7)(react@19.0.0)
+      zustand: 4.5.7(@types/react@19.2.8)(react@19.0.0)
     transitivePeerDependencies:
       - '@types/react'
       - immer
@@ -4760,9 +4760,9 @@ snapshots:
     optionalDependencies:
       commander: 9.5.0
 
-  zustand@4.5.7(@types/react@19.2.7)(react@19.0.0):
+  zustand@4.5.7(@types/react@19.2.8)(react@19.0.0):
     dependencies:
       use-sync-external-store: 1.6.0(react@19.0.0)
     optionalDependencies:
-      '@types/react': 19.2.7
+      '@types/react': 19.2.8
       react: 19.0.0

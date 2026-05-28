@@ -33,7 +33,7 @@
     "@voyager-vue/core": "workspace:*",
     "@voyager-vue/ui": "workspace:*",
     "chalk": "^5.4.1",
-    "commander": "^13.1.0",
+    "commander": "^14.0.0",
     "fast-glob": "^3.3.3",
     "inquirer": "^12.4.2",
     "ora": "^9.0.0"

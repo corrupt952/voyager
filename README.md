@@ -1,3 +1,9 @@
+> [!IMPORTANT]
+> **This repository is archived and no longer maintained.**
+> Feel free to fork it if you'd like to continue development.
+>
+> このリポジトリはアーカイブ済みで、メンテナンスを終了しています。開発を引き継ぎたい方はお気軽にフォークしてください。
+
 # Voyager - Vue Component Dependency Visualizer
 
 Voyager generates beautiful, interactive dependency diagrams from your Vue.js components. Whether you're working on small or large applications, Voyager helps you visualize complex component relationships with ease.
